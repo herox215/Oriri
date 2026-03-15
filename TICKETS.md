@@ -374,11 +374,11 @@ story.md as collective memory per Spec Section 8. Agents only write their own en
 
 **Acceptance Criteria:**
 
-- [ ] appendStory(agentId, message) appends a formatted entry
-- [ ] Entries from other agents are immutable
-- [ ] Corrections as explicitly new entries
-- [ ] Decision entries require A2A reference `(via a2a-XXX)`
-- [ ] getStory() returns complete story.md
+- [x] appendStory(agentId, message) appends a formatted entry
+- [x] Entries from other agents are immutable
+- [x] Corrections as explicitly new entries
+- [x] Decision entries require A2A reference `(via a2a-XXX)`
+- [x] getStory() returns complete story.md
 
 ---
 
