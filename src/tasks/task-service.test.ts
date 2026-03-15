@@ -4,19 +4,22 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { initCommand } from '../cli/init.js';
 import { FilesystemStorage } from '../storage/filesystem-storage.js';
+import { LogService } from '../logs/log-service.js';
 import { TaskNotFoundError } from '../shared/errors.js';
 import { TaskService } from './task-service.js';
 
 describe('TaskService', () => {
   let testDir: string;
   let storage: FilesystemStorage;
+  let logService: LogService;
   let service: TaskService;
 
   beforeEach(async () => {
     testDir = await mkdtemp(join(tmpdir(), 'oriri-test-'));
     await initCommand({ force: false, cwd: testDir });
     storage = new FilesystemStorage(join(testDir, '.oriri'));
-    service = new TaskService(storage);
+    logService = new LogService(storage);
+    service = new TaskService(storage, logService);
   });
 
   afterEach(async () => {

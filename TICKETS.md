@@ -180,11 +180,11 @@ Log files (`task-{id}.log.md`) as append-only chronological protocol. Every stat
 
 **Acceptance Criteria:**
 
-- [ ] appendLog(taskId, agentId, message) appends a line
-- [ ] Timestamp is set automatically
-- [ ] Log file is never overwritten, only appended to
-- [ ] Log exists independently of task.md
-- [ ] Log read: getLog(taskId) returns all entries
+- [x] appendLog(taskId, agentId, message) appends a line
+- [x] Timestamp is set automatically
+- [x] Log file is never overwritten, only appended to
+- [x] Log exists independently of task.md
+- [x] Log read: getLog(taskId) returns all entries
 
 ---
 

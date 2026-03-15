@@ -1,4 +1,5 @@
 import type { StorageInterface } from '../storage/storage-interface.js';
+import type { LogService } from '../logs/log-service.js';
 import { StorageReadError, TaskNotFoundError } from '../shared/errors.js';
 import type { CreateTaskInput, TaskStatus } from './task-types.js';
 import { generateUniqueTaskId } from './task-id.js';
@@ -9,7 +10,10 @@ import {
 } from './task-markdown.js';
 
 export class TaskService {
-  constructor(private readonly storage: StorageInterface) {}
+  constructor(
+    private readonly storage: StorageInterface,
+    private readonly logService: LogService,
+  ) {}
 
   async createTask(input: CreateTaskInput): Promise<string> {
     const existingIds = await this.storage.listTasks();
@@ -28,12 +32,7 @@ export class TaskService {
     });
 
     await this.storage.writeTask(id, markdown);
-
-    const timestamp = createdAt.replace('T', ' ').slice(0, 19);
-    await this.storage.appendLog(
-      id,
-      `[${timestamp}] ${input.createdBy} | created task: ${input.title}`,
-    );
+    await this.logService.appendLog(id, input.createdBy, `created task: ${input.title}`);
 
     return id;
   }
@@ -63,11 +62,10 @@ export class TaskService {
     const updated = replaceStatusInMarkdown(markdown, newStatus);
 
     await this.storage.writeTask(id, updated);
-
-    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
-    await this.storage.appendLog(
+    await this.logService.appendLog(
       id,
-      `[${timestamp}] ${agentId} | status: ${currentStatus ?? 'unknown'} → ${newStatus}`,
+      agentId,
+      `status: ${currentStatus ?? 'unknown'} → ${newStatus}`,
     );
   }
 }
