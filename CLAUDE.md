@@ -28,6 +28,7 @@ pnpm lint:fix       # ESLint + Prettier auto-fix
 The architecture is designed to be extensible at every point without having to touch existing code. New storage backends, agent roles, A2A types, or MCP tools must be pluggable without modifying core modules.
 
 In concrete terms this means:
+
 - **Interfaces before implementations** — Core logic works against interfaces, never against concrete classes
 - **Adapter pattern for I/O** — Storage, transport, notifications are swappable adapters
 - **Registry pattern for extensions** — Roles, A2A types, tool sets are registered, not hardcoded
@@ -42,7 +43,7 @@ Constructor Injection — Classes receive their dependencies as interfaces in th
 class TaskService {
   constructor(
     private storage: StorageInterface,
-    private logger: LogService
+    private logger: LogService,
   ) {}
 }
 
@@ -122,7 +123,7 @@ Custom error classes that inherit from `OririError`. Every error has a machine-r
 class OririError extends Error {
   constructor(
     message: string,
-    public readonly code: string
+    public readonly code: string,
   ) {
     super(message);
   }

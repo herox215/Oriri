@@ -35,13 +35,13 @@ Each ticket contains machine-readable context:
 ```yaml
 ticket:
   id: OR-42
-  title: "Rate Limiting fuer /api/users Endpoint"
+  title: 'Rate Limiting fuer /api/users Endpoint'
   context:
     files:
       - src/api/users.ts
       - src/middleware/rateLimit.ts
     dependencies:
-      - OR-39  # Redis-Integration
+      - OR-39 # Redis-Integration
     codebase_refs:
       - function: handleUserRequest
         file: src/api/users.ts
@@ -50,7 +50,7 @@ ticket:
     - type: test
       command: "npm test -- --grep 'rate limit'"
     - type: assertion
-      check: "GET /api/users returns 429 after 100 requests/min"
+      check: 'GET /api/users returns 429 after 100 requests/min'
   constraints:
     max_context_tokens: 80000
     estimated_complexity: medium
@@ -80,12 +80,12 @@ Not every validation is equally valuable. Oriri models this explicitly via a **c
 
 #### Validation Levels
 
-| Level | Validated by | Confidence | Example |
-|---|---|---|---|
-| **automated** | Tests, Linter, CI | Baseline | Unit tests green, no lint errors |
-| **agent-reviewed** | Second AI agent | Medium | Code review by a review agent |
-| **human-verified** | Human | High | Developer has tested and approved |
-| **human-approved** | Stakeholder/PO | Highest | Product owner has approved the feature |
+| Level              | Validated by      | Confidence | Example                                |
+| ------------------ | ----------------- | ---------- | -------------------------------------- |
+| **automated**      | Tests, Linter, CI | Baseline   | Unit tests green, no lint errors       |
+| **agent-reviewed** | Second AI agent   | Medium     | Code review by a review agent          |
+| **human-verified** | Human             | High       | Developer has tested and approved      |
+| **human-approved** | Stakeholder/PO    | Highest    | Product owner has approved the feature |
 
 The more human validation, the higher the confidence. A ticket validated only by automated tests carries less weight than one approved by a human.
 
@@ -105,14 +105,14 @@ validation:
     - type: test
       command: "npm test -- --grep 'rate limit'"
     - type: lint
-      command: "npm run lint"
+      command: 'npm run lint'
 
   # Human validation — required or optional
   human:
     required: true
-    type: visual_review    # visual_review | functional_review | stakeholder_approval
-    prompt: "Check whether the login form is displayed correctly"
-    assigned_to: null      # Can be assigned to a specific person
+    type: visual_review # visual_review | functional_review | stakeholder_approval
+    prompt: 'Check whether the login form is displayed correctly'
+    assigned_to: null # Can be assigned to a specific person
 
   # Minimum confidence for completion
   min_confidence: human-verified
@@ -158,19 +158,19 @@ AI and human don't just estimate "how long", but along multiple axes:
 ```yaml
 estimation:
   ai:
-    locked: true           # Only visible after human estimation
-    effort: "2h"           # Estimated working time
-    complexity: medium     # low | medium | high | critical
-    risk: low              # Risk of unexpected problems
-    context_needed: 12000  # Tokens of context the agent needs
-    confidence: 0.85       # How confident the AI is in this estimate
+    locked: true # Only visible after human estimation
+    effort: '2h' # Estimated working time
+    complexity: medium # low | medium | high | critical
+    risk: low # Risk of unexpected problems
+    context_needed: 12000 # Tokens of context the agent needs
+    confidence: 0.85 # How confident the AI is in this estimate
     reasoning: |
       Clear requirement, affected files are manageable.
       Rate-limiting pattern already exists in the codebase.
 
   human:
-    locked: true           # Only visible after AI estimation
-    effort: "4h"
+    locked: true # Only visible after AI estimation
+    effort: '4h'
     complexity: medium
     risk: medium
     reasoning: |
@@ -179,8 +179,8 @@ estimation:
 
   # Automatically calculated after reveal
   comparison:
-    effort_delta: "+2h"    # Human estimates higher
-    risk_delta: "+1"       # Human sees more risk
+    effort_delta: '+2h' # Human estimates higher
+    risk_delta: '+1' # Human sees more risk
     needs_discussion: true # Deviation above threshold
     insight: |
       Human sees infrastructure risk (Redis under load)
@@ -189,12 +189,12 @@ estimation:
 
 #### What Happens with Deviations?
 
-| Deviation | Interpretation | Action |
-|---|---|---|
-| AI >> Human | AI sees technical complexity the human isn't aware of | AI explains its concerns |
-| Human >> AI | Human has domain knowledge / experience the AI lacks | Context is added to the ticket |
-| Both similar | Good shared understanding | Ticket can start |
-| Both uncertain | Ticket is poorly defined | Ticket needs refinement |
+| Deviation      | Interpretation                                        | Action                         |
+| -------------- | ----------------------------------------------------- | ------------------------------ |
+| AI >> Human    | AI sees technical complexity the human isn't aware of | AI explains its concerns       |
+| Human >> AI    | Human has domain knowledge / experience the AI lacks  | Context is added to the ticket |
+| Both similar   | Good shared understanding                             | Ticket can start               |
+| Both uncertain | Ticket is poorly defined                              | Ticket needs refinement        |
 
 #### Calibration Over Time
 
@@ -323,14 +323,14 @@ A simple, prioritized list of tasks that need their attention:
 
 The human only receives tasks that actually require a human:
 
-| Type | When | Example |
-|---|---|---|
-| **Visual review** | UI change completed | "Does the new header look right?" |
-| **Functional testing** | Feature implemented | "Does the checkout flow work?" |
-| **Effort estimation** | New ticket, AI waiting | "How complex is this?" |
-| **Decision making** | AI needs input | "SQL or NoSQL for this use case?" |
-| **Provide context** | AI lacks knowledge | "How does the legacy import work?" |
-| **Approval** | Feature release-ready | "Can this go live?" |
+| Type                   | When                   | Example                            |
+| ---------------------- | ---------------------- | ---------------------------------- |
+| **Visual review**      | UI change completed    | "Does the new header look right?"  |
+| **Functional testing** | Feature implemented    | "Does the checkout flow work?"     |
+| **Effort estimation**  | New ticket, AI waiting | "How complex is this?"             |
+| **Decision making**    | AI needs input         | "SQL or NoSQL for this use case?"  |
+| **Provide context**    | AI lacks knowledge     | "How does the legacy import work?" |
+| **Approval**           | Feature release-ready  | "Can this go live?"                |
 
 ### What the Human Does NOT See
 
@@ -370,16 +370,16 @@ The human gives natural language feedback. The system takes care of the rest.
 
 ## Differentiation
 
-| Aspect | Jira + MCP | Oriri |
-|---|---|---|
-| Primary interface | Human (Web UI) | AI agent (internal) + Human (task list) |
-| Data model | Human workflows | Machine-readable context |
-| Ticket size | Arbitrary | Context-budget-aware |
-| Verification | Manual | Confidence levels (auto -> human) |
-| Dependencies | Linked Issues | DAG with scheduling |
-| Storage | Cloud database | Repository (Git-tracked) |
-| Feedback | Retrospectives | Automatic analysis |
-| Multi-agent | Not supported | Orchestration built-in |
+| Aspect            | Jira + MCP      | Oriri                                   |
+| ----------------- | --------------- | --------------------------------------- |
+| Primary interface | Human (Web UI)  | AI agent (internal) + Human (task list) |
+| Data model        | Human workflows | Machine-readable context                |
+| Ticket size       | Arbitrary       | Context-budget-aware                    |
+| Verification      | Manual          | Confidence levels (auto -> human)       |
+| Dependencies      | Linked Issues   | DAG with scheduling                     |
+| Storage           | Cloud database  | Repository (Git-tracked)                |
+| Feedback          | Retrospectives  | Automatic analysis                      |
+| Multi-agent       | Not supported   | Orchestration built-in                  |
 
 ---
 

@@ -14,6 +14,7 @@ Tickets derived from Oriri-Spec-v3-1. Sorted by dependencies — earlier tickets
 Initialize project as a TypeScript/Node.js npm package. Build tooling, linter, test framework, TypeScript configuration.
 
 **Stack:**
+
 - TypeScript + Node.js
 - Package manager: pnpm or npm
 - Build: tsup or tsx
@@ -22,6 +23,7 @@ Initialize project as a TypeScript/Node.js npm package. Build tooling, linter, t
 - CLI: as `bin` entry in package.json (`npx oriri`)
 
 **Acceptance Criteria:**
+
 - [ ] npm package structure with package.json, tsconfig.json
 - [ ] TypeScript compiles without errors
 - [ ] eslint + prettier configured
@@ -39,6 +41,7 @@ Initialize project as a TypeScript/Node.js npm package. Build tooling, linter, t
 Implement `oriri init` command that creates the `.oriri/` directory structure (Spec Section 3). Creates all seven file types with sensible defaults.
 
 **Affected Files (to be created):**
+
 ```
 .oriri/
   config.yaml        ← only non-Markdown file (YAML for machine parsing)
@@ -51,6 +54,7 @@ Implement `oriri init` command that creates the `.oriri/` directory structure (S
 ```
 
 **Acceptance Criteria:**
+
 - [ ] `npx oriri init` creates complete structure
 - [ ] config.yaml has default `mode: local`
 - [ ] story.md is empty with header
@@ -69,36 +73,37 @@ All file operations go through an abstract `StorageInterface`. In the MVP there 
 
 This is the foundation for being able to later simply say: "Connect to this instance via WebSocket" — and everything continues to work.
 
-**Note:** Config reading (`config.yaml`) happens *before* storage initialization — the config determines which adapter is used. Config reading is the only operation that accesses the filesystem directly.
+**Note:** Config reading (`config.yaml`) happens _before_ storage initialization — the config determines which adapter is used. Config reading is the only operation that accesses the filesystem directly.
 
 ```typescript
 interface StorageInterface {
   // Tasks
-  readTask(id: string): Promise<string>       // Returns Markdown
-  writeTask(id: string, content: string): Promise<void>
-  listTasks(): Promise<string[]>              // List of task IDs
-  deleteTask(id: string): Promise<void>
+  readTask(id: string): Promise<string>; // Returns Markdown
+  writeTask(id: string, content: string): Promise<void>;
+  listTasks(): Promise<string[]>; // List of task IDs
+  deleteTask(id: string): Promise<void>;
 
   // Logs (append-only)
-  appendLog(taskId: string, line: string): Promise<void>
-  readLog(taskId: string): Promise<string>
+  appendLog(taskId: string, line: string): Promise<void>;
+  readLog(taskId: string): Promise<string>;
 
   // Story
-  readStory(): Promise<string>
-  appendStory(line: string): Promise<void>
+  readStory(): Promise<string>;
+  appendStory(line: string): Promise<void>;
 
   // A2A
-  readA2A(id: string): Promise<string>
-  writeA2A(id: string, content: string): Promise<void>
-  listA2A(): Promise<string[]>
+  readA2A(id: string): Promise<string>;
+  writeA2A(id: string, content: string): Promise<void>;
+  listA2A(): Promise<string[]>;
 
   // Agents
-  readActiveAgents(): Promise<string>
-  writeActiveAgents(content: string): Promise<void>
+  readActiveAgents(): Promise<string>;
+  writeActiveAgents(content: string): Promise<void>;
 }
 ```
 
 **Acceptance Criteria:**
+
 - [ ] `StorageInterface` defined as TypeScript interface
 - [ ] `FilesystemStorage` implements all methods
 - [ ] All other modules use only the interface, never `fs.*` directly
@@ -116,6 +121,7 @@ interface StorageInterface {
 Load `.oriri/config.yaml`. The only file read directly from the filesystem (before storage initialization), because the config determines which storage adapter is used.
 
 **Acceptance Criteria:**
+
 - [ ] Reads `.oriri/config.yaml` (YAML, not Markdown)
 - [ ] Parses `mode: local` (MVP), later `server | hybrid`
 - [ ] Parses agent definitions (id, display_name, model, role, capabilities)
@@ -136,6 +142,7 @@ Implement task data model per Spec Section 5. Tasks as Markdown files under `.or
 Tasks are Markdown files interpreted by the AI — no strict schema parsing needed. A task that hasn't had a log update for a long time is implicitly "orphaned" — this is not a separate status but a derived state that an agent recognizes.
 
 **Task Fields (as Markdown):**
+
 - id (8-hex hash from created_by + timestamp + title)
 - title, type (feature/bug/chore/escalation)
 - status (open, planning, executing, waiting_for_tool, waiting_for_agent, needs_human, awaiting_review, done)
@@ -144,6 +151,7 @@ Tasks are Markdown files interpreted by the AI — no strict schema parsing need
 - auto_human_gate (yes/no by type)
 
 **Acceptance Criteria:**
+
 - [ ] Task ID generation via hash, collision detection
 - [ ] task-{id}.md write and read via StorageInterface
 - [ ] Status transition automatically creates log entry
@@ -161,6 +169,7 @@ Tasks are Markdown files interpreted by the AI — no strict schema parsing need
 Log files (`task-{id}.log.md`) as append-only chronological protocol. Every status change, every agent action is logged. Logs survive task deletion.
 
 **Format:**
+
 ```markdown
 [2026-03-15 14:30:00] agent-alpha | status: open → planning
 [2026-03-15 14:30:05] agent-alpha | Analysiere Abhängigkeiten...
@@ -168,6 +177,7 @@ Log files (`task-{id}.log.md`) as append-only chronological protocol. Every stat
 ```
 
 **Acceptance Criteria:**
+
 - [ ] appendLog(taskId, agentId, message) appends a line
 - [ ] Timestamp is set automatically
 - [ ] Log file is never overwritten, only appended to
@@ -186,6 +196,7 @@ Log files (`task-{id}.log.md`) as append-only chronological protocol. Every stat
 Implement role system per Spec Section 4.2. Six roles (GENERALIST, CODER, REVIEWER, COORDINATOR, ARCHITECT, OBSERVER) with different permissions on tasks, A2A tasks, and story.md.
 
 **Acceptance Criteria:**
+
 - [ ] Each role has defined permissions (claim/read/no access)
 - [ ] CODER can only claim feature/bug/chore
 - [ ] REVIEWER only sees awaiting_review tasks for claiming
@@ -206,6 +217,7 @@ Self-assignment mechanism: Agent claims a task by setting the status and assigne
 Stale claims (agent crashes, lock remains) are not resolved via disconnect detection, but via self-healing: another agent notices that the log has no more updates and creates an A2A `agent_silent` task (see T-009).
 
 **Acceptance Criteria:**
+
 - [ ] claimTask() sets status to `planning` and `assigned_to` in task.md
 - [ ] Role check before claiming
 - [ ] Log entry on successful claim
@@ -227,10 +239,10 @@ Stale claims (agent crashes, lock remains) are not resolved via disconnect detec
 ```markdown
 # Active Agents
 
-| ID            | Rolle       | Model             | PID   | Seit       |
-|---------------|-------------|--------------------|-------|------------|
-| agent-alpha   | CODER       | claude-sonnet-4-6  | 48291 | 2026-03-15 |
-| agent-reviewer| REVIEWER    | claude-haiku-4-5   | 48305 | 2026-03-15 |
+| ID             | Rolle    | Model             | PID   | Seit       |
+| -------------- | -------- | ----------------- | ----- | ---------- |
+| agent-alpha    | CODER    | claude-sonnet-4-6 | 48291 | 2026-03-15 |
+| agent-reviewer | REVIEWER | claude-haiku-4-5  | 48305 | 2026-03-15 |
 ```
 
 The human can open this file at any time and remove an agent. No CLI command needed — the file is the interface.
@@ -244,6 +256,7 @@ npx oriri agent-list                           # Shows active.md
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Agent registers itself at start in `agents/active.md` (ID, role, model, PID, timestamp)
 - [ ] Agent checks on every loop iteration whether it is still in active.md
 - [ ] If agent is no longer in active.md: finish current task cleanly, then shutdown
@@ -306,11 +319,13 @@ npx oriri agent-start --agent-id agent-alpha
 ```
 
 **Tools the agent provides to the LLM:**
+
 - Oriri tools: list_tasks, claim_task, append_log, complete_task, get_story, create_a2a, vote
 - Code tools: read_file, write_file, run_command, search_files
 - The LLM decides on its own which tools to use and when
 
 **Acceptance Criteria:**
+
 - [ ] `npx oriri agent-start --agent-id agent-alpha` starts a persistent process
 - [ ] Reads agent config from config.yaml (API key, model, role, system prompt)
 - [ ] Calls LLM API with configurable model
@@ -337,6 +352,7 @@ When an agent claims a task but then crashes or disappears, another agent recogn
 The detecting agent creates an A2A task `agent_silent`. After consent, the task is set back to `open` and the stale agent is removed from active.md.
 
 **Acceptance Criteria:**
+
 - [ ] Agent checks on every run: are there tasks with stale logs?
 - [ ] Stale = no log entry for a configurable time (default 60min)
 - [ ] On detection: create A2A task `agent_silent`
@@ -355,6 +371,7 @@ The detecting agent creates an A2A task `agent_silent`. After consent, the task 
 story.md as collective memory per Spec Section 8. Agents only write their own entries, format with timestamp + agent ID. Existing entries from other agents must never be modified.
 
 **Acceptance Criteria:**
+
 - [ ] appendStory(agentId, message) appends a formatted entry
 - [ ] Entries from other agents are immutable
 - [ ] Corrections as explicitly new entries
@@ -371,6 +388,7 @@ story.md as collective memory per Spec Section 8. Agents only write their own en
 Automatic archiving when story.md exceeds 200 lines. Via A2A consent, an agent is tasked with moving older entries to story.archive.md.
 
 **Acceptance Criteria:**
+
 - [ ] Trigger at >200 lines
 - [ ] A2A task `story_archive` is created
 - [ ] After consent: compression + move to story.archive.md
@@ -391,6 +409,7 @@ Agent-to-agent coordination tasks per Spec Section 7. Separate file path (`.orir
 **A2A Types:** merge_proposal, split_proposal, dependency_discovery, agent_silent, deadlock_detected, story_archive, file_missing, conflict_flag, rules_change
 
 **Acceptance Criteria:**
+
 - [ ] A2A tasks are stored in `.oriri/agent-tasks/`
 - [ ] All 9 A2A types defined
 - [ ] A2A tasks have their own log files
@@ -407,6 +426,7 @@ Agent-to-agent coordination tasks per Spec Section 7. Separate file path (`.orir
 Dependency graph between tasks. Detection of circular dependencies (deadlocks). On deadlock: create A2A task `deadlock_detected`.
 
 **Acceptance Criteria:**
+
 - [ ] Tasks can declare dependencies (dependency field)
 - [ ] Task with status `waiting_for_agent` when dependency is not `done`
 - [ ] checkDeadlocks() analyzes graph for cycles
@@ -423,6 +443,7 @@ Dependency graph between tasks. Detection of circular dependencies (deadlocks). 
 Voting system for A2A proposals per Spec Section 7.3. Majority voting, silence=consent, no veto.
 
 **Acceptance Criteria:**
+
 - [ ] vote(a2aId, agentId, vote) with YES/NO/ABSTAIN
 - [ ] Majority: >50% of active agents (snapshot at proposal start)
 - [ ] ABSTAIN does not count toward the base
@@ -444,6 +465,7 @@ Voting system for A2A proposals per Spec Section 7.3. Majority voting, silence=c
 Expose Oriri as MCP server (Spec Section 6). Uses `@modelcontextprotocol/sdk` (TypeScript). In local mode, the MCP server runs via **stdio transport** — no WebSocket, no separate process. Clients like Claude Desktop or Cursor connect directly via stdio.
 
 **Acceptance Criteria:**
+
 - [ ] MCP server via stdio transport (local mode)
 - [ ] Optional WebSocket transport for server mode (post-MVP)
 - [ ] Tool discovery: client can query available tools
@@ -460,6 +482,7 @@ Expose Oriri as MCP server (Spec Section 6). Uses `@modelcontextprotocol/sdk` (T
 Registration of MCP clients (Spec Section 6.2). Distinction between `autonomous` vs. `human_assisted`. Entry in `agents/active.md`.
 
 **Acceptance Criteria:**
+
 - [ ] register() takes display_name, model, client_type, client_software
 - [ ] Registration is optional — defaults are set without it
 - [ ] autonomous clients get a poll interval
@@ -476,6 +499,7 @@ Registration of MCP clients (Spec Section 6.2). Distinction between `autonomous`
 Base tools that all MCP clients can use (Spec Section 6.3 "All Clients").
 
 **Tools:**
+
 - `register(...)` — One-time registration
 - `get_story()` — Read story.md
 - `get_task(id)` — Read task + log
@@ -486,6 +510,7 @@ Base tools that all MCP clients can use (Spec Section 6.3 "All Clients").
 - `vote(a2a_id, vote)` — Consent voting
 
 **Acceptance Criteria:**
+
 - [ ] All 8 tools implemented and callable via MCP
 - [ ] Role check on every tool call
 - [ ] Error handling for invalid IDs, missing permissions
@@ -500,6 +525,7 @@ Base tools that all MCP clients can use (Spec Section 6.3 "All Clients").
 Additional tools for human_assisted clients (Claude Desktop, Cursor, etc.).
 
 **Tools:**
+
 - `get_next_task(capabilities?)` — Next claimable task
 - `claim_task(id)` — Claim task
 - `inspect_task(id)` — Task + log + context bundle complete
@@ -507,6 +533,7 @@ Additional tools for human_assisted clients (Claude Desktop, Cursor, etc.).
 - `request_human_gate(id, reason)` — Set human gate
 
 **Acceptance Criteria:**
+
 - [ ] All 5 tools implemented
 - [ ] get_next_task() respects role and capabilities
 - [ ] complete_task() writes summary to log and sets status `done`
@@ -521,11 +548,13 @@ Additional tools for human_assisted clients (Claude Desktop, Cursor, etc.).
 Additional tools for autonomous agents.
 
 **Tools:**
+
 - `update_task(id, content)` — Update task.md
 - `create_a2a(type, proposal)` — Create A2A task
 - `check_deadlocks()` — Check dependency graph
 
 **Acceptance Criteria:**
+
 - [ ] All 3 tools implemented
 - [ ] update_task() creates log entry on every change
 - [ ] create_a2a() validates A2A type
@@ -548,6 +577,7 @@ npx oriri watch
 ```
 
 **Notifies on:**
+
 - **Human gate open** — Task has status `needs_human`
 - **H2A answered** — Agent has answered a human question
 - **Consent open** — A2A vote is waiting for human vote
@@ -555,6 +585,7 @@ npx oriri watch
 - **Task finished** — Task changes to `done` (optional, configurable)
 
 **How it works:**
+
 ```
 ┌──────────────────────────────────┐
 │  npx oriri watch                  │
@@ -580,6 +611,7 @@ npx oriri watch
 ```
 
 **Acceptance Criteria:**
+
 - [ ] `npx oriri watch` starts file watcher in the background
 - [ ] Uses `fs.watch` / `chokidar` on `.oriri/` directory
 - [ ] Sends native OS notification via `node-notifier` (macOS, Linux, Windows)
@@ -600,12 +632,14 @@ npx oriri watch
 Resilience mechanisms per Spec Section 9. No permission system, instead reconstruction from available context when files are missing/corrupted.
 
 **Reconstruction sources (descending by quality):**
+
 1. Log file + agent memory → nearly complete
 2. Log file only → good
 3. story.md mention → rough
 4. Nothing → human must recreate
 
 **Acceptance Criteria:**
+
 - [ ] A2A task `file_missing` when task.md is missing
 - [ ] Agent with memory can reconstruct task.md immediately
 - [ ] Without memory: reconstruction from log file
@@ -622,6 +656,7 @@ Resilience mechanisms per Spec Section 9. No permission system, instead reconstr
 Documentation and optional tooling for hourly backups of the `.oriri/` directory. In server mode: snapshot commits to the git repo.
 
 **Acceptance Criteria:**
+
 - [ ] Documentation for cron-based backup
 - [ ] Optional `oriri backup` command
 - [ ] In server mode: auto-commit snapshot (configurable)
@@ -638,6 +673,7 @@ Documentation and optional tooling for hourly backups of the `.oriri/` directory
 Oriri server for team setups per Spec Section 2.2. Server memory as single source of truth, disk as persistence, WebSocket broadcast for real-time sync.
 
 **Acceptance Criteria:**
+
 - [ ] `oriri server start` starts server process
 - [ ] WebSocket-based connection
 - [ ] Server memory is SOT
@@ -655,6 +691,7 @@ Oriri server for team setups per Spec Section 2.2. Server memory as single sourc
 Hybrid mode per Spec Section 2.3: primarily local, optional sync with server. Offline-capable, automatic sync when available.
 
 **Acceptance Criteria:**
+
 - [ ] Offline work when server is not reachable
 - [ ] Automatic sync when server is available
 - [ ] Conflicts resolved by timestamp (older wins)
@@ -670,6 +707,7 @@ Hybrid mode per Spec Section 2.3: primarily local, optional sync with server. Of
 WebSocket implementation of the Storage Interface (T-002b). When `mode: server` in config.md, all operations are delegated via WebSocket to the server instead of directly to the filesystem.
 
 **Acceptance Criteria:**
+
 - [ ] Implements the same StorageInterface as the filesystem adapter
 - [ ] Connects via `ws://` URL from config.md
 - [ ] All existing features work without code changes
@@ -723,14 +761,14 @@ T-015 + T-007 → T-027 → T-028
 
 ## Open Questions from the Spec
 
-| ID | Question | Relevant for |
-|---|---|---|
-| OQ-01 | Priority score: Who calculates it? Manual, automatic, or agent? | T-004 |
-| OQ-02 | Human gate detection: Rule-based by task type or agent decision? | T-022 |
-| OQ-03 | Multi-project: One instance per project or per organization? | T-002 |
-| OQ-04 | Context bundle size: When to automatically summarize? | T-004 |
-| OQ-05 | Dep update: What happens to dependent tasks on CHANGES_REQUESTED? | T-013 |
-| OQ-06 | Hybrid conflicts: Exact strategy for state divergence? | T-028 |
-| OQ-07 | H2A routing: COORDINATOR preferred or any GENERALIST? | T-023 |
-| OQ-08 | ~~CLI technology~~ — removed, no TUI anymore, only notification watcher | — |
-| OQ-09 | Token tracking: How are costs measured per agent? | T-024 |
+| ID    | Question                                                                | Relevant for |
+| ----- | ----------------------------------------------------------------------- | ------------ |
+| OQ-01 | Priority score: Who calculates it? Manual, automatic, or agent?         | T-004        |
+| OQ-02 | Human gate detection: Rule-based by task type or agent decision?        | T-022        |
+| OQ-03 | Multi-project: One instance per project or per organization?            | T-002        |
+| OQ-04 | Context bundle size: When to automatically summarize?                   | T-004        |
+| OQ-05 | Dep update: What happens to dependent tasks on CHANGES_REQUESTED?       | T-013        |
+| OQ-06 | Hybrid conflicts: Exact strategy for state divergence?                  | T-028        |
+| OQ-07 | H2A routing: COORDINATOR preferred or any GENERALIST?                   | T-023        |
+| OQ-08 | ~~CLI technology~~ — removed, no TUI anymore, only notification watcher | —            |
+| OQ-09 | Token tracking: How are costs measured per agent?                       | T-024        |
