@@ -64,6 +64,13 @@ export class InvalidTaskStatusError extends OririError {
   }
 }
 
+export class TaskAlreadyClaimedError extends OririError {
+  constructor(taskId: string, assignedTo: string) {
+    super(`Task ${taskId} is already claimed by ${assignedTo}`, 'TASK_ALREADY_CLAIMED');
+    this.name = 'TaskAlreadyClaimedError';
+  }
+}
+
 export class PermissionDeniedError extends OririError {
   constructor(action: string, role: string, reason?: string) {
     const message = reason

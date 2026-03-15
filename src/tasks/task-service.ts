@@ -1,11 +1,17 @@
 import type { StorageInterface } from '../storage/storage-interface.js';
 import type { LogService } from '../logs/log-service.js';
-import { StorageReadError, TaskNotFoundError } from '../shared/errors.js';
+import type { RoleService } from '../agents/role-service.js';
+import type { AgentRole } from '../config/config-types.js';
+import type { TaskType } from './task-types.js';
+import { StorageReadError, TaskNotFoundError, TaskAlreadyClaimedError } from '../shared/errors.js';
 import type { CreateTaskInput, TaskStatus } from './task-types.js';
 import { generateUniqueTaskId } from './task-id.js';
 import {
   buildTaskMarkdown,
+  extractAssignedToFromMarkdown,
   extractStatusFromMarkdown,
+  extractTypeFromMarkdown,
+  replaceAssignedToInMarkdown,
   replaceStatusInMarkdown,
 } from './task-markdown.js';
 
@@ -13,6 +19,7 @@ export class TaskService {
   constructor(
     private readonly storage: StorageInterface,
     private readonly logService: LogService,
+    private readonly roleService: RoleService,
   ) {}
 
   async createTask(input: CreateTaskInput): Promise<string> {
@@ -54,6 +61,34 @@ export class TaskService {
 
   async deleteTask(id: string): Promise<void> {
     await this.storage.deleteTask(id);
+  }
+
+  async claimTask(id: string, agentId: string, role: AgentRole): Promise<void> {
+    const markdown = await this.readTask(id);
+
+    const taskType = extractTypeFromMarkdown(markdown) as TaskType | null;
+    const currentStatus = extractStatusFromMarkdown(markdown) as TaskStatus | null;
+
+    if (!taskType || !currentStatus) {
+      throw new TaskNotFoundError(id);
+    }
+
+    const assignedTo = extractAssignedToFromMarkdown(markdown);
+    if (assignedTo !== null && assignedTo !== '—') {
+      throw new TaskAlreadyClaimedError(id, assignedTo);
+    }
+
+    this.roleService.checkCanClaimTask(role, taskType, currentStatus);
+
+    let updated = replaceStatusInMarkdown(markdown, 'planning');
+    updated = replaceAssignedToInMarkdown(updated, agentId);
+
+    await this.storage.writeTask(id, updated);
+    await this.logService.appendLog(
+      id,
+      agentId,
+      `claimed task, status: ${currentStatus} → planning`,
+    );
   }
 
   async updateStatus(id: string, newStatus: TaskStatus, agentId: string): Promise<void> {

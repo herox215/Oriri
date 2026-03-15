@@ -5,13 +5,19 @@ import { join } from 'node:path';
 import { initCommand } from '../cli/init.js';
 import { FilesystemStorage } from '../storage/filesystem-storage.js';
 import { LogService } from '../logs/log-service.js';
-import { TaskNotFoundError } from '../shared/errors.js';
+import {
+  TaskNotFoundError,
+  TaskAlreadyClaimedError,
+  PermissionDeniedError,
+} from '../shared/errors.js';
+import { RoleService } from '../agents/role-service.js';
 import { TaskService } from './task-service.js';
 
 describe('TaskService', () => {
   let testDir: string;
   let storage: FilesystemStorage;
   let logService: LogService;
+  let roleService: RoleService;
   let service: TaskService;
 
   beforeEach(async () => {
@@ -19,7 +25,8 @@ describe('TaskService', () => {
     await initCommand({ force: false, cwd: testDir });
     storage = new FilesystemStorage(join(testDir, '.oriri'));
     logService = new LogService(storage);
-    service = new TaskService(storage, logService);
+    roleService = new RoleService();
+    service = new TaskService(storage, logService, roleService);
   });
 
   afterEach(async () => {
@@ -241,6 +248,88 @@ describe('TaskService', () => {
 
     it('should throw TaskNotFoundError for non-existent task', async () => {
       await expect(service.updateStatus('nonexistent', 'planning', 'agent-alpha')).rejects.toThrow(
+        TaskNotFoundError,
+      );
+    });
+  });
+
+  describe('claimTask', () => {
+    it('should set status to planning and assigned_to to agent ID', async () => {
+      const id = await service.createTask({
+        title: 'Claimable task',
+        type: 'feature',
+        createdBy: 'agent-alpha',
+      });
+
+      await service.claimTask(id, 'agent-beta', 'CODER');
+      const content = await service.readTask(id);
+      expect(content).toContain('| status | planning |');
+      expect(content).toContain('| assigned_to | agent-beta |');
+    });
+
+    it('should create a log entry on successful claim', async () => {
+      const id = await service.createTask({
+        title: 'Log claim',
+        type: 'bug',
+        createdBy: 'agent-alpha',
+      });
+
+      await service.claimTask(id, 'agent-beta', 'CODER');
+      const log = await storage.readLog(id);
+      expect(log).toContain('agent-beta | claimed task, status: open → planning');
+    });
+
+    it('should throw TaskAlreadyClaimedError when task is already claimed', async () => {
+      const id = await service.createTask({
+        title: 'Already claimed',
+        type: 'chore',
+        createdBy: 'agent-alpha',
+      });
+
+      await service.claimTask(id, 'agent-beta', 'CODER');
+      await expect(service.claimTask(id, 'agent-gamma', 'CODER')).rejects.toThrow(
+        TaskAlreadyClaimedError,
+      );
+    });
+
+    it('should throw PermissionDeniedError for OBSERVER role', async () => {
+      const id = await service.createTask({
+        title: 'Observer cannot claim',
+        type: 'chore',
+        createdBy: 'agent-alpha',
+      });
+
+      await expect(service.claimTask(id, 'agent-observer', 'OBSERVER')).rejects.toThrow(
+        PermissionDeniedError,
+      );
+    });
+
+    it('should throw PermissionDeniedError when CODER tries to claim escalation', async () => {
+      const id = await service.createTask({
+        title: 'Escalation task',
+        type: 'escalation',
+        createdBy: 'agent-alpha',
+      });
+
+      await expect(service.claimTask(id, 'agent-coder', 'CODER')).rejects.toThrow(
+        PermissionDeniedError,
+      );
+    });
+
+    it('should throw PermissionDeniedError when REVIEWER tries to claim open task', async () => {
+      const id = await service.createTask({
+        title: 'Open task',
+        type: 'feature',
+        createdBy: 'agent-alpha',
+      });
+
+      await expect(service.claimTask(id, 'agent-reviewer', 'REVIEWER')).rejects.toThrow(
+        PermissionDeniedError,
+      );
+    });
+
+    it('should throw TaskNotFoundError for non-existent task', async () => {
+      await expect(service.claimTask('nonexistent', 'agent-alpha', 'CODER')).rejects.toThrow(
         TaskNotFoundError,
       );
     });

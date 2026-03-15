@@ -52,3 +52,17 @@ export function extractStatusFromMarkdown(markdown: string): string | null {
   const match = /\| status \| (\S+)/.exec(markdown);
   return match?.[1] ?? null;
 }
+
+export function extractTypeFromMarkdown(markdown: string): string | null {
+  const match = /\| type \| (\S+)/.exec(markdown);
+  return match?.[1] ?? null;
+}
+
+export function extractAssignedToFromMarkdown(markdown: string): string | null {
+  const match = /\| assigned_to \| (.+?) \|/.exec(markdown);
+  return match?.[1] ?? null;
+}
+
+export function replaceAssignedToInMarkdown(markdown: string, agentId: string): string {
+  return markdown.replace(/(\| assigned_to \| ).+?( \|)/, `$1${agentId}$2`);
+}

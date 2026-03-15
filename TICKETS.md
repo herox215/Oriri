@@ -220,10 +220,10 @@ Stale claims (agent crashes, lock remains) are not resolved via disconnect detec
 
 **Acceptance Criteria:**
 
-- [ ] claimTask() sets status to `planning` and `assigned_to` in task.md
-- [ ] Role check before claiming
-- [ ] Log entry on successful claim
-- [ ] No explicit lock management — self-healing for stale claims
+- [x] claimTask() sets status to `planning` and `assigned_to` in task.md
+- [x] Role check before claiming
+- [x] Log entry on successful claim
+- [x] No explicit lock management — self-healing for stale claims
 
 ---
 
