@@ -42,3 +42,24 @@ export class ConfigValidationError extends OririError {
     this.name = 'ConfigValidationError';
   }
 }
+
+export class TaskNotFoundError extends OririError {
+  constructor(id: string) {
+    super(`Task ${id} not found`, 'TASK_NOT_FOUND');
+    this.name = 'TaskNotFoundError';
+  }
+}
+
+export class TaskIdCollisionError extends OririError {
+  constructor(id: string) {
+    super(`Task ID collision: ${id}`, 'TASK_ID_COLLISION');
+    this.name = 'TaskIdCollisionError';
+  }
+}
+
+export class InvalidTaskStatusError extends OririError {
+  constructor(currentStatus: string, newStatus: string) {
+    super(`Cannot transition from '${currentStatus}' to '${newStatus}'`, 'INVALID_TASK_STATUS');
+    this.name = 'InvalidTaskStatusError';
+  }
+}

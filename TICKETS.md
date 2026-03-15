@@ -154,12 +154,12 @@ Tasks are Markdown files interpreted by the AI — no strict schema parsing need
 
 **Acceptance Criteria:**
 
-- [ ] Task ID generation via hash, collision detection
-- [ ] task-{id}.md write and read via StorageInterface
-- [ ] Status transition automatically creates log entry
-- [ ] listTasks() returns all task IDs
-- [ ] Auto human gate is automatically set for feature/bug
-- [ ] No `orphaned` status — derived from log timestamps
+- [x] Task ID generation via hash, collision detection
+- [x] task-{id}.md write and read via StorageInterface
+- [x] Status transition automatically creates log entry
+- [x] listTasks() returns all task IDs
+- [x] Auto human gate is automatically set for feature/bug
+- [x] No `orphaned` status — derived from log timestamps
 
 ---
 

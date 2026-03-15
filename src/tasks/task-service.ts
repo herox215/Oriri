@@ -1,0 +1,73 @@
+import type { StorageInterface } from '../storage/storage-interface.js';
+import { StorageReadError, TaskNotFoundError } from '../shared/errors.js';
+import type { CreateTaskInput, TaskStatus } from './task-types.js';
+import { generateUniqueTaskId } from './task-id.js';
+import {
+  buildTaskMarkdown,
+  extractStatusFromMarkdown,
+  replaceStatusInMarkdown,
+} from './task-markdown.js';
+
+export class TaskService {
+  constructor(private readonly storage: StorageInterface) {}
+
+  async createTask(input: CreateTaskInput): Promise<string> {
+    const existingIds = await this.storage.listTasks();
+    const id = generateUniqueTaskId(input.createdBy, input.title, existingIds);
+    const createdAt = new Date().toISOString();
+
+    const markdown = buildTaskMarkdown({
+      id,
+      title: input.title,
+      type: input.type,
+      status: 'open',
+      createdBy: input.createdBy,
+      createdAt,
+      contextBundle: input.contextBundle,
+      dependencies: input.dependencies,
+    });
+
+    await this.storage.writeTask(id, markdown);
+
+    const timestamp = createdAt.replace('T', ' ').slice(0, 19);
+    await this.storage.appendLog(
+      id,
+      `[${timestamp}] ${input.createdBy} | created task: ${input.title}`,
+    );
+
+    return id;
+  }
+
+  async readTask(id: string): Promise<string> {
+    try {
+      return await this.storage.readTask(id);
+    } catch (error: unknown) {
+      if (error instanceof StorageReadError) {
+        throw new TaskNotFoundError(id);
+      }
+      throw error;
+    }
+  }
+
+  async listTasks(): Promise<string[]> {
+    return this.storage.listTasks();
+  }
+
+  async deleteTask(id: string): Promise<void> {
+    await this.storage.deleteTask(id);
+  }
+
+  async updateStatus(id: string, newStatus: TaskStatus, agentId: string): Promise<void> {
+    const markdown = await this.readTask(id);
+    const currentStatus = extractStatusFromMarkdown(markdown);
+    const updated = replaceStatusInMarkdown(markdown, newStatus);
+
+    await this.storage.writeTask(id, updated);
+
+    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    await this.storage.appendLog(
+      id,
+      `[${timestamp}] ${agentId} | status: ${currentStatus ?? 'unknown'} → ${newStatus}`,
+    );
+  }
+}
