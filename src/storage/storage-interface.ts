@@ -12,6 +12,11 @@ export interface StorageInterface {
   // Story
   readStory(): Promise<string>;
   appendStory(line: string): Promise<void>;
+  writeStory(content: string): Promise<void>;
+
+  // Story Archive
+  readStoryArchive(): Promise<string>;
+  appendStoryArchive(content: string): Promise<void>;
 
   // A2A
   readA2A(id: string): Promise<string>;

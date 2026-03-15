@@ -113,6 +113,13 @@ export class StaleTaskDetectionError extends OririError {
   }
 }
 
+export class StoryArchiveError extends OririError {
+  constructor(message: string) {
+    super(message, 'STORY_ARCHIVE_FAILED');
+    this.name = 'StoryArchiveError';
+  }
+}
+
 export class PermissionDeniedError extends OririError {
   constructor(action: string, role: string, reason?: string) {
     const message = reason

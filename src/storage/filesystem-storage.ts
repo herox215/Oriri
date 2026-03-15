@@ -101,6 +101,24 @@ export class FilesystemStorage implements StorageInterface {
     await appendFile(this.storyPath(), line + '\n', 'utf-8');
   }
 
+  async writeStory(content: string): Promise<void> {
+    await writeFile(this.storyPath(), content, 'utf-8');
+  }
+
+  // Story Archive
+
+  private storyArchivePath(): string {
+    return join(this.basePath, 'story.archive.md');
+  }
+
+  async readStoryArchive(): Promise<string> {
+    return this.readFileOrThrow(this.storyArchivePath(), 'story.archive.md');
+  }
+
+  async appendStoryArchive(content: string): Promise<void> {
+    await appendFile(this.storyArchivePath(), content, 'utf-8');
+  }
+
   // A2A
 
   async readA2A(id: string): Promise<string> {

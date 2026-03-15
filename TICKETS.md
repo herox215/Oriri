@@ -391,11 +391,11 @@ Automatic archiving when story.md exceeds 200 lines. Via A2A consent, an agent i
 
 **Acceptance Criteria:**
 
-- [ ] Trigger at >200 lines
-- [ ] A2A task `story_archive` is created
-- [ ] After consent: compression + move to story.archive.md
-- [ ] story.archive.md is append-only
-- [ ] story.md retains last N entries + archived block reference
+- [x] Trigger at >200 lines
+- [x] A2A task `story_archive` is created
+- [x] After consent: compression + move to story.archive.md
+- [x] story.archive.md is append-only
+- [x] story.md retains last N entries + archived block reference
 
 ---
 

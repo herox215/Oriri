@@ -69,12 +69,14 @@ describe('StoryService', () => {
 
   describe('appendCorrection', () => {
     it('should prefix message with [CORRECTION]', async () => {
-      await storyService.appendCorrection('agent-alpha', 'CODER', 'actually uses Redis, not Postgres');
+      await storyService.appendCorrection(
+        'agent-alpha',
+        'CODER',
+        'actually uses Redis, not Postgres',
+      );
 
       const story = await storyService.getStory();
-      expect(story).toContain(
-        'agent-alpha | [CORRECTION] actually uses Redis, not Postgres',
-      );
+      expect(story).toContain('agent-alpha | [CORRECTION] actually uses Redis, not Postgres');
     });
   });
 
