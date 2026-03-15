@@ -266,7 +266,7 @@ npx oriri agent-list                           # Shows active.md
 - [x] `npx oriri agent-stop --agent-id X` removes agent from active.md
 - [x] `npx oriri agent-stop --all` clears active.md
 - [x] `npx oriri agent-list` shows all registered agents
-- [ ] Stale entries are cleaned up via self-healing (T-009)
+- [x] Stale entries are cleaned up via self-healing (T-009)
 
 ---
 
@@ -355,11 +355,11 @@ The detecting agent creates an A2A task `agent_silent`. After consent, the task 
 
 **Acceptance Criteria:**
 
-- [ ] Agent checks on every run: are there tasks with stale logs?
-- [ ] Stale = no log entry for a configurable time (default 60min)
-- [ ] On detection: create A2A task `agent_silent`
-- [ ] After consent: reset task status to `open`, remove assigned_to
-- [ ] Remove stale agent entry from active.md
+- [x] Agent checks on every run: are there tasks with stale logs?
+- [x] Stale = no log entry for a configurable time (default 60min)
+- [x] On detection: create A2A task `agent_silent`
+- [x] After consent: reset task status to `open`, remove assigned_to
+- [x] Remove stale agent entry from active.md
 
 ---
 

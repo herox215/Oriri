@@ -66,3 +66,7 @@ export function extractAssignedToFromMarkdown(markdown: string): string | null {
 export function replaceAssignedToInMarkdown(markdown: string, agentId: string): string {
   return markdown.replace(/(\| assigned_to \| ).+?( \|)/, `$1${agentId}$2`);
 }
+
+export function clearAssignedToInMarkdown(markdown: string): string {
+  return markdown.replace(/(\| assigned_to \| ).+?( \|)/, `$1—$2`);
+}

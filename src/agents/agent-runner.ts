@@ -14,8 +14,10 @@ import {
   extractTypeFromMarkdown,
   extractAssignedToFromMarkdown,
 } from '../tasks/task-markdown.js';
+import { StaleTaskDetector } from './stale-task-detector.js';
 
 const DEFAULT_IDLE_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+const DEFAULT_STALE_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
 const MAX_RETRIES = 3;
 const MAX_TOKENS = 4096;
 
@@ -31,6 +33,7 @@ export interface AgentRunnerDeps {
   shutdownController: ShutdownController;
   projectRoot: string;
   idleIntervalMs?: number;
+  staleTimeoutMs?: number;
 }
 
 export class AgentRunner {
@@ -60,7 +63,7 @@ export class AgentRunner {
       if (taskId) {
         await this.workOnTask(taskId);
       } else {
-        this.idleChecks();
+        await this.idleChecks();
         if (!shutdownController.isShutdownRequested()) {
           await this.sleep(this.deps.idleIntervalMs ?? DEFAULT_IDLE_INTERVAL_MS);
         }
@@ -281,13 +284,24 @@ export class AgentRunner {
     }
   }
 
-  private idleChecks(): void {
-    // Stale task detection (T-009) and A2A checks (T-012) are not yet implemented
-    console.log(
-      `[${this.deps.agentConfig.id}] Idle — no tasks available. Running housekeeping checks...`,
-    );
+  private async idleChecks(): Promise<void> {
+    const { agentConfig, storage, taskService, logService, registry } = this.deps;
+    const thresholdMs = this.deps.staleTimeoutMs ?? DEFAULT_STALE_TIMEOUT_MS;
 
-    // TODO (T-009): Check for stale tasks (no log update > 60min on non-done tasks)
+    console.log(`[${agentConfig.id}] Idle — running housekeeping checks...`);
+
+    const detector = new StaleTaskDetector({ storage, taskService, logService, registry });
+    const staleTasks = await detector.findStaleTasks(thresholdMs);
+
+    for (const staleTask of staleTasks) {
+      if (staleTask.assignedTo === agentConfig.id) continue;
+
+      const a2aId = await detector.handleStaleTask(staleTask, agentConfig.id);
+      console.log(
+        `[${agentConfig.id}] Created A2A a2a-${a2aId} for stale task ${staleTask.taskId}`,
+      );
+    }
+
     // TODO (T-012): Check for open A2A tickets, vote if applicable
     // TODO (T-012): Check if A2A tickets exist that concern this agent's role
   }

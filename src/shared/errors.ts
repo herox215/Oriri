@@ -106,6 +106,13 @@ export class ToolExecutionError extends OririError {
   }
 }
 
+export class StaleTaskDetectionError extends OririError {
+  constructor(taskId: string, message: string) {
+    super(`Stale detection failed for task ${taskId}: ${message}`, 'STALE_DETECTION_FAILED');
+    this.name = 'StaleTaskDetectionError';
+  }
+}
+
 export class PermissionDeniedError extends OririError {
   constructor(action: string, role: string, reason?: string) {
     const message = reason

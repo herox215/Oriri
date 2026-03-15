@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildTaskMarkdown,
+  clearAssignedToInMarkdown,
   extractAssignedToFromMarkdown,
   extractTypeFromMarkdown,
   replaceAssignedToInMarkdown,
@@ -53,6 +54,14 @@ describe('task-markdown helpers', () => {
       const second = replaceAssignedToInMarkdown(first, 'agent-gamma');
       expect(second).toContain('| assigned_to | agent-gamma |');
       expect(second).not.toContain('agent-beta');
+    });
+  });
+
+  describe('clearAssignedToInMarkdown', () => {
+    it('should reset assigned_to to em dash', () => {
+      const assigned = replaceAssignedToInMarkdown(sampleMarkdown, 'agent-beta');
+      const cleared = clearAssignedToInMarkdown(assigned);
+      expect(extractAssignedToFromMarkdown(cleared)).toBe('—');
     });
   });
 });
