@@ -71,6 +71,20 @@ export class TaskAlreadyClaimedError extends OririError {
   }
 }
 
+export class AgentNotFoundError extends OririError {
+  constructor(id: string) {
+    super(`Agent ${id} not found in active agents`, 'AGENT_NOT_FOUND');
+    this.name = 'AgentNotFoundError';
+  }
+}
+
+export class AgentAlreadyRegisteredError extends OririError {
+  constructor(id: string) {
+    super(`Agent ${id} is already registered`, 'AGENT_ALREADY_REGISTERED');
+    this.name = 'AgentAlreadyRegisteredError';
+  }
+}
+
 export class PermissionDeniedError extends OririError {
   constructor(action: string, role: string, reason?: string) {
     const message = reason

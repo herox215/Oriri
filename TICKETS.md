@@ -259,13 +259,13 @@ npx oriri agent-list                           # Shows active.md
 
 **Acceptance Criteria:**
 
-- [ ] Agent registers itself at start in `agents/active.md` (ID, role, model, PID, timestamp)
-- [ ] Agent checks on every loop iteration whether it is still in active.md
-- [ ] If agent is no longer in active.md: finish current task cleanly, then shutdown
-- [ ] Graceful shutdown via SIGTERM/SIGINT (removes itself)
-- [ ] `npx oriri agent-stop --agent-id X` removes agent from active.md
-- [ ] `npx oriri agent-stop --all` clears active.md
-- [ ] `npx oriri agent-list` shows all registered agents
+- [x] Agent registers itself at start in `agents/active.md` (ID, role, model, PID, timestamp)
+- [x] Agent checks on every loop iteration whether it is still in active.md
+- [x] If agent is no longer in active.md: finish current task cleanly, then shutdown
+- [x] Graceful shutdown via SIGTERM/SIGINT (removes itself)
+- [x] `npx oriri agent-stop --agent-id X` removes agent from active.md
+- [x] `npx oriri agent-stop --all` clears active.md
+- [x] `npx oriri agent-list` shows all registered agents
 - [ ] Stale entries are cleaned up via self-healing (T-009)
 
 ---
