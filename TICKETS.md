@@ -2,6 +2,8 @@
 
 Tickets derived from Oriri-Spec-v3-1. Sorted by dependencies — earlier tickets are the foundation for later ones.
 
+> **Agent-Hinweis:** Beim Abschließen eines Tickets die Acceptance Criteria hier in der TICKETS.md abhaken (`- [x]`).
+
 ---
 
 ## Phase 1: Foundation
@@ -24,11 +26,11 @@ Initialize project as a TypeScript/Node.js npm package. Build tooling, linter, t
 
 **Acceptance Criteria:**
 
-- [ ] npm package structure with package.json, tsconfig.json
-- [ ] TypeScript compiles without errors
-- [ ] eslint + prettier configured
-- [ ] vitest runs (empty test run)
-- [ ] `npx oriri` executes CLI entry point
+- [x] npm package structure with package.json, tsconfig.json
+- [x] TypeScript compiles without errors
+- [x] eslint + prettier configured
+- [x] vitest runs (empty test run)
+- [x] `npx oriri` executes CLI entry point
 - [ ] CI pipeline for tests (optional, local is sufficient for MVP)
 
 ---
@@ -55,12 +57,12 @@ Implement `oriri init` command that creates the `.oriri/` directory structure (S
 
 **Acceptance Criteria:**
 
-- [ ] `npx oriri init` creates complete structure
-- [ ] config.yaml has default `mode: local`
-- [ ] story.md is empty with header
-- [ ] rules.md contains default consent rules (Majority >50%)
-- [ ] Double `init` does not overwrite anything / warns
-- [ ] Error message if `.oriri/` already exists (with `--force` flag)
+- [x] `npx oriri init` creates complete structure
+- [x] config.yaml has default `mode: local`
+- [x] story.md is empty with header
+- [x] rules.md contains default consent rules (Majority >50%)
+- [x] Double `init` does not overwrite anything / warns
+- [x] Error message if `.oriri/` already exists (with `--force` flag)
 
 ---
 

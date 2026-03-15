@@ -1,3 +1,6 @@
+import { OririError } from '../shared/errors.js';
+import { initCommand } from './init.js';
+
 const args = process.argv.slice(2);
 const command = args[0];
 
@@ -11,8 +14,13 @@ function printHelp(): void {
   console.log('Run "oriri <command> --help" for more information about a command.');
 }
 
-function main(): void {
+async function main(): Promise<void> {
   switch (command) {
+    case 'init': {
+      const force = args.includes('--force');
+      await initCommand({ force });
+      break;
+    }
     case 'help':
     case '--help':
     case '-h':
@@ -26,4 +34,11 @@ function main(): void {
   }
 }
 
-main();
+main().catch((error: unknown) => {
+  if (error instanceof OririError) {
+    console.error(`Error: ${error.message}`);
+    process.exitCode = 1;
+  } else {
+    throw error;
+  }
+});
