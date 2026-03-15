@@ -14,3 +14,17 @@ export class InitError extends OririError {
     this.name = 'InitError';
   }
 }
+
+export class StorageReadError extends OririError {
+  constructor(entity: string) {
+    super(`${entity} not found`, 'STORAGE_READ_FAILED');
+    this.name = 'StorageReadError';
+  }
+}
+
+export class StorageWriteError extends OririError {
+  constructor(entity: string) {
+    super(`Failed to write ${entity}`, 'STORAGE_WRITE_FAILED');
+    this.name = 'StorageWriteError';
+  }
+}

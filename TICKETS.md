@@ -106,12 +106,12 @@ interface StorageInterface {
 
 **Acceptance Criteria:**
 
-- [ ] `StorageInterface` defined as TypeScript interface
-- [ ] `FilesystemStorage` implements all methods
-- [ ] All other modules use only the interface, never `fs.*` directly
-- [ ] Storage implementation is selected via config (`mode: local` → Filesystem)
-- [ ] Interface works with raw strings (Markdown) — no structured objects, the AI interprets the content
-- [ ] Interface is designed so that a WebSocket adapter can be added later without changes to the rest
+- [x] `StorageInterface` defined as TypeScript interface
+- [x] `FilesystemStorage` implements all methods
+- [x] All other modules use only the interface, never `fs.*` directly
+- [x] Storage implementation is selected via config (`mode: local` → Filesystem)
+- [x] Interface works with raw strings (Markdown) — no structured objects, the AI interprets the content
+- [x] Interface is designed so that a WebSocket adapter can be added later without changes to the rest
 
 ---
 
