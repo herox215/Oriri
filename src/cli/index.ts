@@ -5,6 +5,7 @@ import { FilesystemStorage } from '../storage/filesystem-storage.js';
 import { AgentRegistry } from '../agents/agent-registry.js';
 import { initCommand } from './init.js';
 import { agentListCommand } from './agent-list.js';
+import { agentStartCommand } from './agent-start.js';
 import { agentStopCommand } from './agent-stop.js';
 
 const args = process.argv.slice(2);
@@ -28,6 +29,7 @@ function printHelp(): void {
   console.log('');
   console.log('Commands:');
   console.log('  init              Initialize Oriri in the current directory');
+  console.log('  agent-start       Start an agent process');
   console.log('  agent-list        Show all registered agents');
   console.log('  agent-stop        Stop an agent or all agents');
   console.log('  help              Show this help message');
@@ -40,6 +42,16 @@ async function main(): Promise<void> {
     case 'init': {
       const force = args.includes('--force');
       await initCommand({ force });
+      break;
+    }
+    case 'agent-start': {
+      const agentId = getArgValue(args, '--agent-id');
+      if (!agentId) {
+        console.error('Missing required flag: --agent-id');
+        process.exitCode = 1;
+        break;
+      }
+      await agentStartCommand({ agentId });
       break;
     }
     case 'agent-list': {

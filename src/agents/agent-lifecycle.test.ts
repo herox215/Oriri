@@ -42,6 +42,13 @@ describe('setupGracefulShutdown', () => {
     expect(signalHandlers['SIGINT']).toHaveLength(1);
   });
 
+  it('should return a ShutdownController', () => {
+    const controller = setupGracefulShutdown('agent-alpha', mockRegistry);
+
+    expect(controller.isShutdownRequested()).toBe(false);
+    expect(typeof controller.onShutdown).toBe('function');
+  });
+
   it('should deregister agent on SIGTERM', async () => {
     setupGracefulShutdown('agent-alpha', mockRegistry);
 
@@ -90,5 +97,27 @@ describe('setupGracefulShutdown', () => {
     });
 
     expect(deregisterMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('should report shutdown requested after signal', async () => {
+    const controller = setupGracefulShutdown('agent-alpha', mockRegistry);
+
+    expect(controller.isShutdownRequested()).toBe(false);
+
+    signalHandlers['SIGTERM'][0]();
+    await vi.waitFor(() => {
+      expect(controller.isShutdownRequested()).toBe(true);
+    });
+  });
+
+  it('should invoke onShutdown callbacks on signal', async () => {
+    const controller = setupGracefulShutdown('agent-alpha', mockRegistry);
+    const callback = vi.fn();
+    controller.onShutdown(callback);
+
+    signalHandlers['SIGTERM'][0]();
+    await vi.waitFor(() => {
+      expect(callback).toHaveBeenCalled();
+    });
   });
 });

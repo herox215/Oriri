@@ -5,9 +5,11 @@ import { parse } from 'yaml';
 import { ConfigNotFoundError, ConfigValidationError } from '../shared/errors.js';
 import {
   AGENT_ROLES,
+  LLM_PROVIDERS,
   STORAGE_MODES,
   type AgentConfig,
   type AgentRole,
+  type LLMProviderType,
   type OririConfig,
   type StorageMode,
 } from './config-types.js';
@@ -86,6 +88,25 @@ function validateAgent(raw: unknown, index: number): AgentConfig {
     throw new ConfigValidationError(`${prefix}.api_key must be a string`);
   }
 
+  if (
+    'system_prompt' in agent &&
+    agent['system_prompt'] !== undefined &&
+    typeof agent['system_prompt'] !== 'string'
+  ) {
+    throw new ConfigValidationError(`${prefix}.system_prompt must be a string`);
+  }
+
+  if ('provider' in agent && agent['provider'] !== undefined) {
+    if (
+      typeof agent['provider'] !== 'string' ||
+      !LLM_PROVIDERS.includes(agent['provider'] as LLMProviderType)
+    ) {
+      throw new ConfigValidationError(
+        `${prefix}.provider "${typeof agent['provider'] === 'string' ? agent['provider'] : 'invalid'}" is invalid. Must be one of: ${LLM_PROVIDERS.join(', ')}`,
+      );
+    }
+  }
+
   const result: AgentConfig = {
     id: agent['id'] as string,
     display_name: agent['display_name'] as string,
@@ -95,6 +116,14 @@ function validateAgent(raw: unknown, index: number): AgentConfig {
 
   if (typeof agent['api_key'] === 'string') {
     result.api_key = agent['api_key'];
+  }
+
+  if (typeof agent['system_prompt'] === 'string') {
+    result.system_prompt = agent['system_prompt'];
+  }
+
+  if (typeof agent['provider'] === 'string') {
+    result.provider = agent['provider'] as LLMProviderType;
   }
 
   if (Array.isArray(agent['capabilities'])) {

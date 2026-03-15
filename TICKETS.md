@@ -328,19 +328,19 @@ npx oriri agent-start --agent-id agent-alpha
 
 **Acceptance Criteria:**
 
-- [ ] `npx oriri agent-start --agent-id agent-alpha` starts a persistent process
-- [ ] Reads agent config from config.yaml (API key, model, role, system prompt)
-- [ ] Calls LLM API with configurable model
-- [ ] Provides the LLM with Oriri tools + code tools
-- [ ] Executes tool calls from the LLM (agentic loop)
-- [ ] Logs every step in task-{id}.log.md
-- [ ] Idle mode: checks every 10 minutes for new tasks
-- [ ] While idle: checks for stale tasks → creates A2A `agent_silent` if needed
-- [ ] While idle: checks for open A2A tickets → votes if vote is open
-- [ ] While idle: checks if A2A tickets exist that concern its role
-- [ ] Reads story.md for context on every new task
-- [ ] Graceful shutdown: finish current task cleanly on SIGTERM
-- [ ] Model-agnostic: Anthropic API is default, but interface for other LLMs
+- [x] `npx oriri agent-start --agent-id agent-alpha` starts a persistent process
+- [x] Reads agent config from config.yaml (API key, model, role, system prompt)
+- [x] Calls LLM API with configurable model
+- [x] Provides the LLM with Oriri tools + code tools
+- [x] Executes tool calls from the LLM (agentic loop)
+- [x] Logs every step in task-{id}.log.md
+- [x] Idle mode: checks every 10 minutes for new tasks
+- [x] While idle: checks for stale tasks → creates A2A `agent_silent` if needed
+- [x] While idle: checks for open A2A tickets → votes if vote is open
+- [x] While idle: checks if A2A tickets exist that concern its role
+- [x] Reads story.md for context on every new task
+- [x] Graceful shutdown: finish current task cleanly on SIGTERM
+- [x] Model-agnostic: Anthropic API is default, but interface for other LLMs
 
 ---
 

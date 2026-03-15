@@ -85,6 +85,27 @@ export class AgentAlreadyRegisteredError extends OririError {
   }
 }
 
+export class AgentConfigNotFoundError extends OririError {
+  constructor(agentId: string) {
+    super(`Agent config for "${agentId}" not found in config.yaml`, 'AGENT_CONFIG_NOT_FOUND');
+    this.name = 'AgentConfigNotFoundError';
+  }
+}
+
+export class LLMApiError extends OririError {
+  constructor(message: string) {
+    super(message, 'LLM_API_ERROR');
+    this.name = 'LLMApiError';
+  }
+}
+
+export class ToolExecutionError extends OririError {
+  constructor(toolName: string, message: string) {
+    super(`Tool "${toolName}" failed: ${message}`, 'TOOL_EXECUTION_ERROR');
+    this.name = 'ToolExecutionError';
+  }
+}
+
 export class PermissionDeniedError extends OririError {
   constructor(action: string, role: string, reason?: string) {
     const message = reason
