@@ -63,3 +63,13 @@ export class InvalidTaskStatusError extends OririError {
     this.name = 'InvalidTaskStatusError';
   }
 }
+
+export class PermissionDeniedError extends OririError {
+  constructor(action: string, role: string, reason?: string) {
+    const message = reason
+      ? `Role '${role}' cannot ${action}: ${reason}`
+      : `Role '${role}' cannot ${action}`;
+    super(message, 'PERMISSION_DENIED');
+    this.name = 'PermissionDeniedError';
+  }
+}

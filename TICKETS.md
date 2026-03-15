@@ -199,13 +199,13 @@ Implement role system per Spec Section 4.2. Six roles (GENERALIST, CODER, REVIEW
 
 **Acceptance Criteria:**
 
-- [ ] Each role has defined permissions (claim/read/no access)
-- [ ] CODER can only claim feature/bug/chore
-- [ ] REVIEWER only sees awaiting_review tasks for claiming
-- [ ] COORDINATOR only claims A2A tasks
-- [ ] OBSERVER is read-only, no claiming
-- [ ] All except OBSERVER can vote
-- [ ] Role check on every claimTask() / createA2A()
+- [x] Each role has defined permissions (claim/read/no access)
+- [x] CODER can only claim feature/bug/chore
+- [x] REVIEWER only sees awaiting_review tasks for claiming
+- [x] COORDINATOR only claims A2A tasks
+- [x] OBSERVER is read-only, no claiming
+- [x] All except OBSERVER can vote
+- [x] Role check on every claimTask() / createA2A()
 
 ---
 
