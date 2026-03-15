@@ -28,3 +28,17 @@ export class StorageWriteError extends OririError {
     this.name = 'StorageWriteError';
   }
 }
+
+export class ConfigNotFoundError extends OririError {
+  constructor(path: string) {
+    super(`Config file not found: ${path}`, 'CONFIG_NOT_FOUND');
+    this.name = 'ConfigNotFoundError';
+  }
+}
+
+export class ConfigValidationError extends OririError {
+  constructor(message: string) {
+    super(message, 'CONFIG_VALIDATION_FAILED');
+    this.name = 'ConfigValidationError';
+  }
+}

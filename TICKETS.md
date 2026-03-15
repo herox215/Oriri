@@ -124,13 +124,13 @@ Load `.oriri/config.yaml`. The only file read directly from the filesystem (befo
 
 **Acceptance Criteria:**
 
-- [ ] Reads `.oriri/config.yaml` (YAML, not Markdown)
-- [ ] Parses `mode: local` (MVP), later `server | hybrid`
-- [ ] Parses agent definitions (id, display_name, model, role, capabilities)
-- [ ] Resolves `${ENV_VAR}` from environment variables
-- [ ] Validation: error on unknown roles, missing required fields
-- [ ] Returns typed config object
-- [ ] Config determines which StorageInterface adapter is instantiated
+- [x] Reads `.oriri/config.yaml` (YAML, not Markdown)
+- [x] Parses `mode: local` (MVP), later `server | hybrid`
+- [x] Parses agent definitions (id, display_name, model, role, capabilities)
+- [x] Resolves `${ENV_VAR}` from environment variables
+- [x] Validation: error on unknown roles, missing required fields
+- [x] Returns typed config object
+- [x] Config determines which StorageInterface adapter is instantiated
 
 ---
 
