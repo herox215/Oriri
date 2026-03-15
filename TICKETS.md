@@ -1,82 +1,82 @@
 # Oriri Implementation Tickets
 
-Tickets abgeleitet aus Oriri-Spec-v3-1. Sortiert nach Abhaengigkeiten — fruehe Tickets sind Grundlage fuer spaetere.
+Tickets derived from Oriri-Spec-v3-1. Sorted by dependencies — earlier tickets are the foundation for later ones.
 
 ---
 
-## Phase 1: Fundament
+## Phase 1: Foundation
 
-### T-001: Projekt-Scaffolding & Toolchain
+### T-001: Project Scaffolding & Toolchain
 
-**Typ:** chore
-**Abhaengigkeiten:** keine
-**Beschreibung:**
-Projekt initialisieren als TypeScript/Node.js npm-Paket. Build-Tooling, Linter, Test-Framework, TypeScript-Konfiguration.
+**Type:** chore
+**Dependencies:** none
+**Description:**
+Initialize project as a TypeScript/Node.js npm package. Build tooling, linter, test framework, TypeScript configuration.
 
 **Stack:**
 - TypeScript + Node.js
-- Package-Manager: pnpm oder npm
-- Build: tsup oder tsx
+- Package manager: pnpm or npm
+- Build: tsup or tsx
 - Test: vitest
 - Linter: eslint + prettier
-- CLI: als `bin`-Eintrag in package.json (`npx oriri`)
+- CLI: as `bin` entry in package.json (`npx oriri`)
 
-**Akzeptanzkriterien:**
-- [ ] npm-Paket Struktur mit package.json, tsconfig.json
-- [ ] TypeScript kompiliert fehlerfrei
-- [ ] eslint + prettier eingerichtet
-- [ ] vitest laeuft (leerer Test-Run)
-- [ ] `npx oriri` fuehrt CLI-Einstiegspunkt aus
-- [ ] CI-Pipeline fuer Tests (optional, lokal reicht fuer MVP)
+**Acceptance Criteria:**
+- [ ] npm package structure with package.json, tsconfig.json
+- [ ] TypeScript compiles without errors
+- [ ] eslint + prettier configured
+- [ ] vitest runs (empty test run)
+- [ ] `npx oriri` executes CLI entry point
+- [ ] CI pipeline for tests (optional, local is sufficient for MVP)
 
 ---
 
-### T-002: Filesystem-Struktur & Init-Command
+### T-002: Filesystem Structure & Init Command
 
-**Typ:** feature
-**Abhaengigkeiten:** T-001
-**Beschreibung:**
-`oriri init` Command implementieren, das die `.oriri/` Verzeichnisstruktur anlegt (Spec Abschnitt 3). Erstellt alle sieben Dateitypen mit sinnvollen Defaults.
+**Type:** feature
+**Dependencies:** T-001
+**Description:**
+Implement `oriri init` command that creates the `.oriri/` directory structure (Spec Section 3). Creates all seven file types with sensible defaults.
 
-**Betroffene Dateien (zu erzeugen):**
+**Affected Files (to be created):**
 ```
 .oriri/
-  config.yaml        ← einzige nicht-Markdown Datei (YAML fuer maschinelles Parsen)
+  config.yaml        ← only non-Markdown file (YAML for machine parsing)
   story.md
   story.archive.md
   rules.md
   agents/active.md
-  tasks/             (leeres Verzeichnis)
-  agent-tasks/       (leeres Verzeichnis)
+  tasks/             (empty directory)
+  agent-tasks/       (empty directory)
 ```
 
-**Akzeptanzkriterien:**
-- [ ] `npx oriri init` erstellt komplette Struktur
-- [ ] config.yaml hat Default `mode: local`
-- [ ] story.md ist leer mit Header
-- [ ] rules.md enthaelt Default-Consent-Regeln (Majority >50%)
-- [ ] Doppeltes `init` ueberschreibt nichts / warnt
-- [ ] Fehlermeldung wenn `.oriri/` bereits existiert (mit `--force` Flag)
+**Acceptance Criteria:**
+- [ ] `npx oriri init` creates complete structure
+- [ ] config.yaml has default `mode: local`
+- [ ] story.md is empty with header
+- [ ] rules.md contains default consent rules (Majority >50%)
+- [ ] Double `init` does not overwrite anything / warns
+- [ ] Error message if `.oriri/` already exists (with `--force` flag)
 
 ---
 
-### T-002b: Storage-Interface (Abstraktionsschicht)
+### T-002b: Storage Interface (Abstraction Layer)
 
-**Typ:** feature
-**Abhaengigkeiten:** T-002
-**Beschreibung:**
-Alle Datei-Operationen laufen ueber ein abstraktes `StorageInterface`. Im MVP gibt es nur eine Implementierung: `FilesystemStorage` (liest/schreibt direkt in `.oriri/`). Spaeter kann ein `WebSocketStorage` dazukommen — ohne dass irgendein anderer Code sich aendern muss.
+**Type:** feature
+**Dependencies:** T-002
+**Description:**
+All file operations go through an abstract `StorageInterface`. In the MVP there is only one implementation: `FilesystemStorage` (reads/writes directly to `.oriri/`). Later a `WebSocketStorage` can be added — without any other code needing to change.
 
-Das ist die Grundlage dafuer, dass wir spaeter einfach sagen koennen: "Connecte dich mit dieser Instanz per WebSocket" — und alles funktioniert weiter.
+This is the foundation for being able to later simply say: "Connect to this instance via WebSocket" — and everything continues to work.
 
-**Hinweis:** Config-Lesen (`config.yaml`) passiert *vor* der Storage-Initialisierung — die Config bestimmt welcher Adapter genutzt wird. Config-Lesen ist die einzige Operation die direkt aufs Filesystem zugreift.
+**Note:** Config reading (`config.yaml`) happens *before* storage initialization — the config determines which adapter is used. Config reading is the only operation that accesses the filesystem directly.
 
 ```typescript
 interface StorageInterface {
   // Tasks
-  readTask(id: string): Promise<string>       // Gibt Markdown zurueck
+  readTask(id: string): Promise<string>       // Returns Markdown
   writeTask(id: string, content: string): Promise<void>
-  listTasks(): Promise<string[]>              // Liste von Task-IDs
+  listTasks(): Promise<string[]>              // List of task IDs
   deleteTask(id: string): Promise<void>
 
   // Logs (append-only)
@@ -98,67 +98,67 @@ interface StorageInterface {
 }
 ```
 
-**Akzeptanzkriterien:**
-- [ ] `StorageInterface` als TypeScript Interface definiert
-- [ ] `FilesystemStorage` implementiert alle Methoden
-- [ ] Alle anderen Module nutzen nur das Interface, nie direkt `fs.*`
-- [ ] Storage-Implementierung wird per Config gewaehlt (`mode: local` → Filesystem)
-- [ ] Interface arbeitet mit rohen Strings (Markdown) — keine strukturierten Objekte, die AI interpretiert den Inhalt
-- [ ] Interface ist so geschnitten dass ein WebSocket-Adapter spaeter reinpasst ohne Aenderungen am Rest
+**Acceptance Criteria:**
+- [ ] `StorageInterface` defined as TypeScript interface
+- [ ] `FilesystemStorage` implements all methods
+- [ ] All other modules use only the interface, never `fs.*` directly
+- [ ] Storage implementation is selected via config (`mode: local` → Filesystem)
+- [ ] Interface works with raw strings (Markdown) — no structured objects, the AI interprets the content
+- [ ] Interface is designed so that a WebSocket adapter can be added later without changes to the rest
 
 ---
 
-### T-003: Config-Loader
+### T-003: Config Loader
 
-**Typ:** feature
-**Abhaengigkeiten:** T-002
-**Beschreibung:**
-`.oriri/config.yaml` laden. Einzige Datei die direkt vom Filesystem gelesen wird (vor Storage-Initialisierung), weil die Config bestimmt welcher Storage-Adapter genutzt wird.
+**Type:** feature
+**Dependencies:** T-002
+**Description:**
+Load `.oriri/config.yaml`. The only file read directly from the filesystem (before storage initialization), because the config determines which storage adapter is used.
 
-**Akzeptanzkriterien:**
-- [ ] Liest `.oriri/config.yaml` (YAML, nicht Markdown)
-- [ ] Parst `mode: local` (MVP), spaeter `server | hybrid`
-- [ ] Parst Agent-Definitionen (id, display_name, model, role, capabilities)
-- [ ] Loest `${ENV_VAR}` aus Umgebungsvariablen auf
-- [ ] Validierung: Fehler bei unbekannten Rollen, fehlenden Pflichtfeldern
-- [ ] Gibt typisiertes Config-Objekt zurueck
-- [ ] Config bestimmt welcher StorageInterface-Adapter instanziiert wird
+**Acceptance Criteria:**
+- [ ] Reads `.oriri/config.yaml` (YAML, not Markdown)
+- [ ] Parses `mode: local` (MVP), later `server | hybrid`
+- [ ] Parses agent definitions (id, display_name, model, role, capabilities)
+- [ ] Resolves `${ENV_VAR}` from environment variables
+- [ ] Validation: error on unknown roles, missing required fields
+- [ ] Returns typed config object
+- [ ] Config determines which StorageInterface adapter is instantiated
 
 ---
 
-### T-004: Task-Datenmodell & CRUD
+### T-004: Task Data Model & CRUD
 
-**Typ:** feature
-**Abhaengigkeiten:** T-002b
-**Beschreibung:**
-Task-Datenmodell nach Spec Abschnitt 5 implementieren. Tasks als Markdown-Dateien unter `.oriri/tasks/`. Umfasst Lesen, Schreiben, Auflisten, Status-Updates. Alle Operationen gehen ueber das StorageInterface.
+**Type:** feature
+**Dependencies:** T-002b
+**Description:**
+Implement task data model per Spec Section 5. Tasks as Markdown files under `.oriri/tasks/`. Includes reading, writing, listing, status updates. All operations go through the StorageInterface.
 
-Tasks sind Markdown-Dateien die von der AI interpretiert werden — kein striktes Schema-Parsing noetig. Ein Task der lange kein Log-Update hat ist implizit "orphaned" — das ist kein eigener Status sondern ein abgeleiteter Zustand den ein Agent erkennt.
+Tasks are Markdown files interpreted by the AI — no strict schema parsing needed. A task that hasn't had a log update for a long time is implicitly "orphaned" — this is not a separate status but a derived state that an agent recognizes.
 
-**Task-Felder (als Markdown):**
-- id (8-Hex Hash aus created_by + timestamp + title)
+**Task Fields (as Markdown):**
+- id (8-hex hash from created_by + timestamp + title)
 - title, type (feature/bug/chore/escalation)
 - status (open, planning, executing, waiting_for_tool, waiting_for_agent, needs_human, awaiting_review, done)
 - assigned_to, created_by, created_at
 - context_bundle, dependencies
-- auto_human_gate (ja/nein nach Typ)
+- auto_human_gate (yes/no by type)
 
-**Akzeptanzkriterien:**
-- [ ] Task-ID Generierung per Hash, Kollisionserkennung
-- [ ] task-{id}.md schreiben und lesen ueber StorageInterface
-- [ ] Status-Uebergang erstellt automatisch Log-Eintrag
-- [ ] listTasks() gibt alle Task-IDs zurueck
-- [ ] Auto-Human-Gate wird bei feature/bug automatisch gesetzt
-- [ ] Kein `orphaned` Status — wird abgeleitet aus Log-Timestamps
+**Acceptance Criteria:**
+- [ ] Task ID generation via hash, collision detection
+- [ ] task-{id}.md write and read via StorageInterface
+- [ ] Status transition automatically creates log entry
+- [ ] listTasks() returns all task IDs
+- [ ] Auto human gate is automatically set for feature/bug
+- [ ] No `orphaned` status — derived from log timestamps
 
 ---
 
-### T-005: Append-Only Log-System
+### T-005: Append-Only Log System
 
-**Typ:** feature
-**Abhaengigkeiten:** T-002b, T-004
-**Beschreibung:**
-Log-Dateien (`task-{id}.log.md`) als append-only chronologisches Protokoll. Jeder Status-Wechsel, jede Agent-Aktion wird geloggt. Logs ueberleben Task-Loeschung.
+**Type:** feature
+**Dependencies:** T-002b, T-004
+**Description:**
+Log files (`task-{id}.log.md`) as append-only chronological protocol. Every status change, every agent action is logged. Logs survive task deletion.
 
 **Format:**
 ```markdown
@@ -167,62 +167,62 @@ Log-Dateien (`task-{id}.log.md`) als append-only chronologisches Protokoll. Jede
 [2026-03-15 14:32:00] agent-alpha | status: planning → executing
 ```
 
-**Akzeptanzkriterien:**
-- [ ] appendLog(taskId, agentId, message) haengt Zeile an
-- [ ] Timestamp wird automatisch gesetzt
-- [ ] Log-Datei wird nie ueberschrieben, nur angehaengt
-- [ ] Log existiert unabhaengig von task.md
-- [ ] Log lesen: getLog(taskId) gibt alle Eintraege zurueck
+**Acceptance Criteria:**
+- [ ] appendLog(taskId, agentId, message) appends a line
+- [ ] Timestamp is set automatically
+- [ ] Log file is never overwritten, only appended to
+- [ ] Log exists independently of task.md
+- [ ] Log read: getLog(taskId) returns all entries
 
 ---
 
-## Phase 2: Agent-Runtime
+## Phase 2: Agent Runtime
 
-### T-006: Agent-Rollen & Berechtigungen
+### T-006: Agent Roles & Permissions
 
-**Typ:** feature
-**Abhaengigkeiten:** T-003, T-004
-**Beschreibung:**
-Rollen-System nach Spec Abschnitt 4.2 implementieren. Sechs Rollen (GENERALIST, CODER, REVIEWER, COORDINATOR, ARCHITECT, OBSERVER) mit unterschiedlichen Rechten auf Tasks, A2A-Tasks und story.md.
+**Type:** feature
+**Dependencies:** T-003, T-004
+**Description:**
+Implement role system per Spec Section 4.2. Six roles (GENERALIST, CODER, REVIEWER, COORDINATOR, ARCHITECT, OBSERVER) with different permissions on tasks, A2A tasks, and story.md.
 
-**Akzeptanzkriterien:**
-- [ ] Jede Rolle hat definierte Rechte (claim/lesen/kein Zugriff)
-- [ ] CODER kann nur feature/bug/chore claimen
-- [ ] REVIEWER sieht nur awaiting_review Tasks zum Claimen
-- [ ] COORDINATOR claimed nur A2A Tasks
-- [ ] OBSERVER ist read-only, kein Claimen
-- [ ] Alle ausser OBSERVER koennen voten
-- [ ] Rollen-Check bei jedem claimTask() / createA2A()
-
----
-
-### T-007: Task-Claiming
-
-**Typ:** feature
-**Abhaengigkeiten:** T-004, T-006
-**Beschreibung:**
-Self-Assignment Mechanismus: Agent claimed Task indem er Status und assigned_to in der task.md setzt. Bei Race Conditions (zwei Agents schreiben gleichzeitig) gewinnt der erste Schreiber — der zweite erkennt beim naechsten Lesen dass der Task schon vergeben ist und sucht weiter.
-
-Stale Claims (Agent stuerzt ab, Lock bleibt) werden nicht per Disconnect-Detection geloest, sondern per Self-Healing: Ein anderer Agent bemerkt dass das Log keine Updates mehr hat und erstellt einen A2A `agent_silent` Task (siehe T-009).
-
-**Akzeptanzkriterien:**
-- [ ] claimTask() setzt Status auf `planning` und `assigned_to` in task.md
-- [ ] Rollen-Check vor dem Claimen
-- [ ] Log-Eintrag bei erfolgreichem Claim
-- [ ] Kein explizites Lock-Management — Self-Healing bei stale Claims
+**Acceptance Criteria:**
+- [ ] Each role has defined permissions (claim/read/no access)
+- [ ] CODER can only claim feature/bug/chore
+- [ ] REVIEWER only sees awaiting_review tasks for claiming
+- [ ] COORDINATOR only claims A2A tasks
+- [ ] OBSERVER is read-only, no claiming
+- [ ] All except OBSERVER can vote
+- [ ] Role check on every claimTask() / createA2A()
 
 ---
 
-### T-008: Agent-Registrierung & Kontrolle
+### T-007: Task Claiming
 
-**Typ:** feature
-**Abhaengigkeiten:** T-003, T-007
-**Beschreibung:**
-`agents/active.md` ist die zentrale Kontrolldatei fuer alle laufenden Agents. Sie dient gleichzeitig als Registry und als Kill-Switch:
+**Type:** feature
+**Dependencies:** T-004, T-006
+**Description:**
+Self-assignment mechanism: Agent claims a task by setting the status and assigned_to in the task.md. In case of race conditions (two agents write simultaneously), the first writer wins — the second one recognizes on the next read that the task is already assigned and moves on.
 
-- **Start:** Agent traegt sich ein
-- **Laufend:** Agent prueft bei jedem Loop ob er noch drinsteht
-- **Stoppen:** Mensch (oder anderer Agent) loescht die Zeile → Agent bemerkt das und faehrt sich sauber herunter
+Stale claims (agent crashes, lock remains) are not resolved via disconnect detection, but via self-healing: another agent notices that the log has no more updates and creates an A2A `agent_silent` task (see T-009).
+
+**Acceptance Criteria:**
+- [ ] claimTask() sets status to `planning` and `assigned_to` in task.md
+- [ ] Role check before claiming
+- [ ] Log entry on successful claim
+- [ ] No explicit lock management — self-healing for stale claims
+
+---
+
+### T-008: Agent Registration & Control
+
+**Type:** feature
+**Dependencies:** T-003, T-007
+**Description:**
+`agents/active.md` is the central control file for all running agents. It serves simultaneously as a registry and as a kill switch:
+
+- **Start:** Agent registers itself
+- **Running:** Agent checks on every loop whether it is still listed
+- **Stop:** Human (or another agent) deletes the line → Agent notices this and shuts down cleanly
 
 ```markdown
 # Active Agents
@@ -233,38 +233,38 @@ Stale Claims (Agent stuerzt ab, Lock bleibt) werden nicht per Disconnect-Detecti
 | agent-reviewer| REVIEWER    | claude-haiku-4-5   | 48305 | 2026-03-15 |
 ```
 
-Der Mensch kann jederzeit diese Datei oeffnen und einen Agent entfernen. Kein CLI-Befehl noetig — die Datei ist das Interface.
+The human can open this file at any time and remove an agent. No CLI command needed — the file is the interface.
 
-Zusaetzlich gibt es Convenience-Befehle:
+Additionally, there are convenience commands:
 
 ```bash
-npx oriri agent-stop --agent-id agent-alpha    # Entfernt aus active.md
-npx oriri agent-stop --all                     # Alle Agents stoppen
-npx oriri agent-list                           # Zeigt active.md
+npx oriri agent-stop --agent-id agent-alpha    # Removes from active.md
+npx oriri agent-stop --all                     # Stop all agents
+npx oriri agent-list                           # Shows active.md
 ```
 
-**Akzeptanzkriterien:**
-- [ ] Agent traegt sich bei Start in `agents/active.md` ein (ID, Rolle, Model, PID, Timestamp)
-- [ ] Agent prueft bei jedem Loop-Durchlauf ob er noch in active.md steht
-- [ ] Wenn Agent nicht mehr in active.md: aktuellen Task sauber beenden, dann Shutdown
-- [ ] Graceful Shutdown per SIGTERM/SIGINT (traegt sich selbst aus)
-- [ ] `npx oriri agent-stop --agent-id X` entfernt Agent aus active.md
-- [ ] `npx oriri agent-stop --all` leert active.md
-- [ ] `npx oriri agent-list` zeigt alle registrierten Agents
-- [ ] Stale Eintraege werden per Self-Healing bereinigt (T-009)
+**Acceptance Criteria:**
+- [ ] Agent registers itself at start in `agents/active.md` (ID, role, model, PID, timestamp)
+- [ ] Agent checks on every loop iteration whether it is still in active.md
+- [ ] If agent is no longer in active.md: finish current task cleanly, then shutdown
+- [ ] Graceful shutdown via SIGTERM/SIGINT (removes itself)
+- [ ] `npx oriri agent-stop --agent-id X` removes agent from active.md
+- [ ] `npx oriri agent-stop --all` clears active.md
+- [ ] `npx oriri agent-list` shows all registered agents
+- [ ] Stale entries are cleaned up via self-healing (T-009)
 
 ---
 
-### T-008b: Agent-Runner (LLM API Loop)
+### T-008b: Agent Runner (LLM API Loop)
 
-**Typ:** feature
-**Abhaengigkeiten:** T-008, T-004, T-005, T-010
-**Beschreibung:**
-Langlebiger Agent-Prozess der dauerhaft laeuft und eigenstaendig Tasks abarbeitet. Der Agent-Runner ist eine Endlosschleife mit zwei Modi:
+**Type:** feature
+**Dependencies:** T-008, T-004, T-005, T-010
+**Description:**
+Long-lived agent process that runs continuously and independently processes tasks. The agent runner is an infinite loop with two modes:
 
-**Arbeitend:** Agent hat einen Task geclaimt und arbeitet ihn ab. Ruft die LLM API (z.B. Anthropic) auf, gibt dem Model die Oriri-Tools + Projekt-Dateien, fuehrt Tool-Calls aus bis der Task fertig ist.
+**Working:** Agent has claimed a task and is processing it. Calls the LLM API (e.g., Anthropic), gives the model the Oriri tools + project files, executes tool calls until the task is finished.
 
-**Idle:** Kein offener Task verfuegbar. Agent wartet und prueft alle 10 Minuten ob neue Tasks da sind. Waehrend er idlet, prueft er auch auf stale Tasks anderer Agents (Self-Healing).
+**Idle:** No open task available. Agent waits and checks every 10 minutes whether new tasks exist. While idle, it also checks for stale tasks of other agents (self-healing).
 
 ```
 npx oriri agent-start --agent-id agent-alpha
@@ -275,14 +275,14 @@ npx oriri agent-start --agent-id agent-alpha
 │  Agent-Runner Loop                           │
 │                                              │
 │  while (true) {                              │
-│    tasks = listTasks(open, meineRolle)        │
+│    tasks = listTasks(open, myRole)            │
 │                                              │
 │    if (tasks.length > 0) {                   │
 │      task = pickBestTask(tasks)               │
 │      claimTask(task)                          │
 │                                              │
 │      // LLM API Loop                         │
-│      while (task nicht fertig) {              │
+│      while (task not finished) {              │
 │        response = anthropic.messages.create({ │
 │          model: config.model,                 │
 │          system: systemPrompt + story.md,     │
@@ -290,245 +290,245 @@ npx oriri agent-start --agent-id agent-alpha
 │          messages: taskContext                 │
 │        })                                     │
 │        executeToolCalls(response)             │
-│        appendLog(task, fortschritt)           │
+│        appendLog(task, progress)              │
 │      }                                        │
 │                                              │
 │      completeTask(task, summary)              │
 │    } else {                                  │
-│      // Idle — nichts zu tun, also Housekeeping │
-│      checkForStaleTasks()   // Stale Logs?    │
-│      checkOpenA2A()         // Offene Votes?  │
-│      respondToA2A()         // Selber voten   │
+│      // Idle — nothing to do, so housekeeping │
+│      checkForStaleTasks()   // Stale logs?    │
+│      checkOpenA2A()         // Open votes?    │
+│      respondToA2A()         // Vote ourselves │
 │      sleep(10 min)                            │
 │    }                                          │
 │  }                                            │
 └──────────────────────────────────────────────┘
 ```
 
-**Tools die der Agent dem LLM gibt:**
-- Oriri-Tools: list_tasks, claim_task, append_log, complete_task, get_story, create_a2a, vote
-- Code-Tools: read_file, write_file, run_command, search_files
-- Das LLM entscheidet selbst welche Tools es wann nutzt
+**Tools the agent provides to the LLM:**
+- Oriri tools: list_tasks, claim_task, append_log, complete_task, get_story, create_a2a, vote
+- Code tools: read_file, write_file, run_command, search_files
+- The LLM decides on its own which tools to use and when
 
-**Akzeptanzkriterien:**
-- [ ] `npx oriri agent-start --agent-id agent-alpha` startet dauerhaften Prozess
-- [ ] Liest Agent-Config aus config.yaml (API Key, Model, Rolle, System-Prompt)
-- [ ] Ruft LLM API auf mit konfigurierbarem Model
-- [ ] Gibt dem LLM Oriri-Tools + Code-Tools
-- [ ] Fuehrt Tool-Calls des LLM aus (Agentic Loop)
-- [ ] Loggt jeden Schritt in task-{id}.log.md
-- [ ] Idle-Modus: Prueft alle 10 Minuten auf neue Tasks
-- [ ] Im Idle: Prueft auf stale Tasks → erstellt A2A `agent_silent` wenn noetig
-- [ ] Im Idle: Prueft auf offene A2A Tickets → voted wenn Abstimmung offen
-- [ ] Im Idle: Prueft ob A2A Tickets existieren die seine Rolle betreffen
-- [ ] Liest story.md bei jedem neuen Task als Kontext
-- [ ] Graceful Shutdown: Aktuellen Task sauber beenden bei SIGTERM
-- [ ] Modell-agnostisch: Anthropic API ist Default, aber Interface fuer andere LLMs
+**Acceptance Criteria:**
+- [ ] `npx oriri agent-start --agent-id agent-alpha` starts a persistent process
+- [ ] Reads agent config from config.yaml (API key, model, role, system prompt)
+- [ ] Calls LLM API with configurable model
+- [ ] Provides the LLM with Oriri tools + code tools
+- [ ] Executes tool calls from the LLM (agentic loop)
+- [ ] Logs every step in task-{id}.log.md
+- [ ] Idle mode: checks every 10 minutes for new tasks
+- [ ] While idle: checks for stale tasks → creates A2A `agent_silent` if needed
+- [ ] While idle: checks for open A2A tickets → votes if vote is open
+- [ ] While idle: checks if A2A tickets exist that concern its role
+- [ ] Reads story.md for context on every new task
+- [ ] Graceful shutdown: finish current task cleanly on SIGTERM
+- [ ] Model-agnostic: Anthropic API is default, but interface for other LLMs
 
 ---
 
 ### T-009: Self-Healing (Stale Task Detection)
 
-**Typ:** feature
-**Abhaengigkeiten:** T-008, T-005, T-012
-**Beschreibung:**
-Wenn ein Agent einen Task claimed aber dann abstuerzt oder verschwindet, erkennt ein anderer Agent das Problem anhand der Log-Timestamps: Kein Update seit >X Minuten bei einem Task der nicht `done` oder `waiting_for_agent` ist.
+**Type:** feature
+**Dependencies:** T-008, T-005, T-012
+**Description:**
+When an agent claims a task but then crashes or disappears, another agent recognizes the problem based on log timestamps: no update for >X minutes on a task that is not `done` or `waiting_for_agent`.
 
-Der erkennende Agent erstellt einen A2A Task `agent_silent`. Nach Consent wird der Task zurueck auf `open` gesetzt und der stale Agent aus active.md entfernt.
+The detecting agent creates an A2A task `agent_silent`. After consent, the task is set back to `open` and the stale agent is removed from active.md.
 
-**Akzeptanzkriterien:**
-- [ ] Agent prueft bei jedem Run: gibt es Tasks mit stale Logs?
-- [ ] Stale = kein Log-Eintrag seit konfigurierbarer Zeit (default 60min)
-- [ ] Bei Fund: A2A Task `agent_silent` erstellen
-- [ ] Nach Consent: Task-Status zurueck auf `open`, assigned_to entfernen
-- [ ] Stale Agent-Eintrag aus active.md entfernen
-
----
-
-## Phase 3: story.md & Kollektives Gedaechtnis
-
-### T-010: story.md Lese- und Schreiblogik
-
-**Typ:** feature
-**Abhaengigkeiten:** T-005, T-006
-**Beschreibung:**
-story.md als kollektives Gedaechtnis nach Spec Abschnitt 8. Agents schreiben nur eigene Eintraege, Format mit Timestamp + Agent-ID. Bestehende Eintraege anderer Agents duerfen nie geaendert werden.
-
-**Akzeptanzkriterien:**
-- [ ] appendStory(agentId, message) haengt formatierten Eintrag an
-- [ ] Eintraege anderer Agents sind immutable
-- [ ] Korrekturen als explizit neue Eintraege
-- [ ] Entscheidungs-Eintraege brauchen A2A-Referenz `(via a2a-XXX)`
-- [ ] getStory() gibt komplette story.md zurueck
+**Acceptance Criteria:**
+- [ ] Agent checks on every run: are there tasks with stale logs?
+- [ ] Stale = no log entry for a configurable time (default 60min)
+- [ ] On detection: create A2A task `agent_silent`
+- [ ] After consent: reset task status to `open`, remove assigned_to
+- [ ] Remove stale agent entry from active.md
 
 ---
 
-### T-011: story.md Archivierung
+## Phase 3: story.md & Collective Memory
 
-**Typ:** feature
-**Abhaengigkeiten:** T-010, T-014 (A2A Consent)
-**Beschreibung:**
-Automatische Archivierung wenn story.md >200 Zeilen. Per A2A Consent wird ein Agent beauftragt, aeltere Eintraege nach story.archive.md zu verschieben.
+### T-010: story.md Read and Write Logic
 
-**Akzeptanzkriterien:**
-- [ ] Trigger bei >200 Zeilen
-- [ ] A2A Task `story_archive` wird erstellt
-- [ ] Nach Consent: Komprimierung + Verschiebung nach story.archive.md
-- [ ] story.archive.md ist append-only
-- [ ] story.md behaelt letzte N Eintraege + Archived-Block-Referenz
+**Type:** feature
+**Dependencies:** T-005, T-006
+**Description:**
+story.md as collective memory per Spec Section 8. Agents only write their own entries, format with timestamp + agent ID. Existing entries from other agents must never be modified.
 
----
-
-## Phase 4: A2A Koordination
-
-### T-012: A2A Task-Datenmodell
-
-**Typ:** feature
-**Abhaengigkeiten:** T-004
-**Beschreibung:**
-Agent-to-Agent Koordinations-Tasks nach Spec Abschnitt 7. Eigener Dateipfad (`.oriri/agent-tasks/a2a-{id}.md`), eigene Log-Dateien. Nur fuer Agents sichtbar.
-
-**A2A Typen:** merge_proposal, split_proposal, dependency_discovery, agent_silent, deadlock_detected, story_archive, file_missing, conflict_flag, rules_change
-
-**Akzeptanzkriterien:**
-- [ ] A2A Tasks werden in `.oriri/agent-tasks/` gespeichert
-- [ ] Alle 9 A2A-Typen definiert
-- [ ] A2A Tasks haben eigene Log-Dateien
-- [ ] Nach Abschluss als Audit-Trail zugaenglich
-- [ ] Betroffene Tasks erhalten Referenz `(via a2a-XXX ✓)`
+**Acceptance Criteria:**
+- [ ] appendStory(agentId, message) appends a formatted entry
+- [ ] Entries from other agents are immutable
+- [ ] Corrections as explicitly new entries
+- [ ] Decision entries require A2A reference `(via a2a-XXX)`
+- [ ] getStory() returns complete story.md
 
 ---
 
-### T-013: Dependency-Graph & Deadlock-Detection
+### T-011: story.md Archiving
 
-**Typ:** feature
-**Abhaengigkeiten:** T-004, T-012
-**Beschreibung:**
-Abhaengigkeitsgraph zwischen Tasks. Erkennung zirkulaerer Abhaengigkeiten (Deadlocks). Bei Deadlock: A2A Task `deadlock_detected` erstellen.
+**Type:** feature
+**Dependencies:** T-010, T-014 (A2A Consent)
+**Description:**
+Automatic archiving when story.md exceeds 200 lines. Via A2A consent, an agent is tasked with moving older entries to story.archive.md.
 
-**Akzeptanzkriterien:**
-- [ ] Tasks koennen Abhaengigkeiten deklarieren (dependency-Feld)
-- [ ] Task mit Status `waiting_for_agent` wenn Abhaengigkeit nicht `done`
-- [ ] checkDeadlocks() analysiert Graph auf Zyklen
-- [ ] Bei Zyklus: A2A Task wird erstellt
-- [ ] Consent-Verfahren loest Deadlock (z.B. Abhaengigkeit entfernen)
+**Acceptance Criteria:**
+- [ ] Trigger at >200 lines
+- [ ] A2A task `story_archive` is created
+- [ ] After consent: compression + move to story.archive.md
+- [ ] story.archive.md is append-only
+- [ ] story.md retains last N entries + archived block reference
 
 ---
 
-### T-014: Consent-System (Voting)
+## Phase 4: A2A Coordination
 
-**Typ:** feature
-**Abhaengigkeiten:** T-012, T-006
-**Beschreibung:**
-Abstimmungssystem fuer A2A-Proposals nach Spec Abschnitt 7.3. Majority-Voting, Silence=Consent, kein Veto.
+### T-012: A2A Task Data Model
 
-**Akzeptanzkriterien:**
-- [ ] vote(a2aId, agentId, vote) mit YES/NO/ABSTAIN
-- [ ] Majority: >50% der aktiven Agents (Snapshot bei Proposal-Start)
-- [ ] ABSTAIN zaehlt nicht zur Basis
-- [ ] Silence nach Deadline = YES
-- [ ] 50:50 = nicht angenommen (>50% noetig)
-- [ ] rules.md Aenderung: Unanimous + mindestens 1 Human Approval
-- [ ] Meta-Regel (Unanimous fuer rules.md) ist hardcoded, nicht aenderbar
-- [ ] OBSERVER darf nicht voten
+**Type:** feature
+**Dependencies:** T-004
+**Description:**
+Agent-to-agent coordination tasks per Spec Section 7. Separate file path (`.oriri/agent-tasks/a2a-{id}.md`), separate log files. Only visible to agents.
+
+**A2A Types:** merge_proposal, split_proposal, dependency_discovery, agent_silent, deadlock_detected, story_archive, file_missing, conflict_flag, rules_change
+
+**Acceptance Criteria:**
+- [ ] A2A tasks are stored in `.oriri/agent-tasks/`
+- [ ] All 9 A2A types defined
+- [ ] A2A tasks have their own log files
+- [ ] Accessible as audit trail after completion
+- [ ] Affected tasks receive reference `(via a2a-XXX ✓)`
+
+---
+
+### T-013: Dependency Graph & Deadlock Detection
+
+**Type:** feature
+**Dependencies:** T-004, T-012
+**Description:**
+Dependency graph between tasks. Detection of circular dependencies (deadlocks). On deadlock: create A2A task `deadlock_detected`.
+
+**Acceptance Criteria:**
+- [ ] Tasks can declare dependencies (dependency field)
+- [ ] Task with status `waiting_for_agent` when dependency is not `done`
+- [ ] checkDeadlocks() analyzes graph for cycles
+- [ ] On cycle: A2A task is created
+- [ ] Consent process resolves deadlock (e.g., remove dependency)
+
+---
+
+### T-014: Consent System (Voting)
+
+**Type:** feature
+**Dependencies:** T-012, T-006
+**Description:**
+Voting system for A2A proposals per Spec Section 7.3. Majority voting, silence=consent, no veto.
+
+**Acceptance Criteria:**
+- [ ] vote(a2aId, agentId, vote) with YES/NO/ABSTAIN
+- [ ] Majority: >50% of active agents (snapshot at proposal start)
+- [ ] ABSTAIN does not count toward the base
+- [ ] Silence after deadline = YES
+- [ ] 50:50 = not accepted (>50% required)
+- [ ] rules.md change: Unanimous + at least 1 human approval
+- [ ] Meta-rule (unanimous for rules.md) is hardcoded, not changeable
+- [ ] OBSERVER may not vote
 
 ---
 
 ## Phase 5: MCP Server
 
-### T-015: MCP Server Grundgeruest
+### T-015: MCP Server Scaffolding
 
-**Typ:** feature
-**Abhaengigkeiten:** T-004, T-005, T-010
-**Beschreibung:**
-Oriri als MCP Server exponieren (Spec Abschnitt 6). Verwendet `@modelcontextprotocol/sdk` (TypeScript). Im Lokal-Modus laeuft der MCP-Server per **stdio-Transport** — kein WebSocket, kein separater Prozess. Clients wie Claude Desktop oder Cursor verbinden sich direkt per stdio.
+**Type:** feature
+**Dependencies:** T-004, T-005, T-010
+**Description:**
+Expose Oriri as MCP server (Spec Section 6). Uses `@modelcontextprotocol/sdk` (TypeScript). In local mode, the MCP server runs via **stdio transport** — no WebSocket, no separate process. Clients like Claude Desktop or Cursor connect directly via stdio.
 
-**Akzeptanzkriterien:**
-- [ ] MCP Server per stdio-Transport (Lokal-Modus)
-- [ ] Optionaler WebSocket-Transport fuer Server-Modus (Post-MVP)
-- [ ] Tool-Discovery: Client kann verfuegbare Tools abfragen
-- [ ] Modell-agnostisch: Jeder MCP-faehige Client kann sich verbinden
-- [ ] Kein separater Server-Prozess im Lokal-Modus
-
----
-
-### T-016: MCP Client-Registrierung
-
-**Typ:** feature
-**Abhaengigkeiten:** T-015
-**Beschreibung:**
-Registrierung von MCP-Clients (Spec Abschnitt 6.2). Unterscheidung `autonomous` vs. `human_assisted`. Eintrag in `agents/active.md`.
-
-**Akzeptanzkriterien:**
-- [ ] register() nimmt display_name, model, client_type, client_software
-- [ ] Registrierung ist optional — ohne werden Defaults gesetzt
-- [ ] autonomous Clients bekommen Poll-Intervall
-- [ ] human_assisted Clients haben keinen Heartbeat
-- [ ] Eintrag erscheint in `agents/active.md`
+**Acceptance Criteria:**
+- [ ] MCP server via stdio transport (local mode)
+- [ ] Optional WebSocket transport for server mode (post-MVP)
+- [ ] Tool discovery: client can query available tools
+- [ ] Model-agnostic: any MCP-capable client can connect
+- [ ] No separate server process in local mode
 
 ---
 
-### T-017: MCP Tool-Set — Alle Clients
+### T-016: MCP Client Registration
 
-**Typ:** feature
-**Abhaengigkeiten:** T-015, T-016
-**Beschreibung:**
-Basis-Tools die alle MCP-Clients nutzen koennen (Spec Abschnitt 6.3 "Alle Clients").
+**Type:** feature
+**Dependencies:** T-015
+**Description:**
+Registration of MCP clients (Spec Section 6.2). Distinction between `autonomous` vs. `human_assisted`. Entry in `agents/active.md`.
+
+**Acceptance Criteria:**
+- [ ] register() takes display_name, model, client_type, client_software
+- [ ] Registration is optional — defaults are set without it
+- [ ] autonomous clients get a poll interval
+- [ ] human_assisted clients have no heartbeat
+- [ ] Entry appears in `agents/active.md`
+
+---
+
+### T-017: MCP Tool Set — All Clients
+
+**Type:** feature
+**Dependencies:** T-015, T-016
+**Description:**
+Base tools that all MCP clients can use (Spec Section 6.3 "All Clients").
 
 **Tools:**
-- `register(...)` — Einmalige Registrierung
-- `get_story()` — story.md lesen
-- `get_task(id)` — Task + Log lesen
-- `list_tasks(filter?)` — Alle Tasks, filterbar
-- `get_active_agents()` — Verbundene Agents
-- `create_task(...)` — Neuen Task anlegen
-- `append_log(id, message)` — Log-Eintrag
-- `vote(a2a_id, vote)` — Consent-Voting
+- `register(...)` — One-time registration
+- `get_story()` — Read story.md
+- `get_task(id)` — Read task + log
+- `list_tasks(filter?)` — All tasks, filterable
+- `get_active_agents()` — Connected agents
+- `create_task(...)` — Create new task
+- `append_log(id, message)` — Log entry
+- `vote(a2a_id, vote)` — Consent voting
 
-**Akzeptanzkriterien:**
-- [ ] Alle 8 Tools implementiert und per MCP aufrufbar
-- [ ] Rollen-Check bei jedem Tool-Call
-- [ ] Fehlerbehandlung bei ungueltigen IDs, fehlenden Rechten
-
----
-
-### T-018: MCP Tool-Set — Human-Assisted
-
-**Typ:** feature
-**Abhaengigkeiten:** T-017
-**Beschreibung:**
-Zusaetzliche Tools fuer human_assisted Clients (Claude Desktop, Cursor, etc.).
-
-**Tools:**
-- `get_next_task(capabilities?)` — Naechster claimlbarer Task
-- `claim_task(id)` — Task claimen
-- `inspect_task(id)` — Task + Log + Context Bundle komplett
-- `complete_task(id, summary)` — Task abschliessen
-- `request_human_gate(id, reason)` — Human Gate setzen
-
-**Akzeptanzkriterien:**
-- [ ] Alle 5 Tools implementiert
-- [ ] get_next_task() respektiert Rolle und Capabilities
-- [ ] complete_task() schreibt Summary in Log und setzt Status `done`
+**Acceptance Criteria:**
+- [ ] All 8 tools implemented and callable via MCP
+- [ ] Role check on every tool call
+- [ ] Error handling for invalid IDs, missing permissions
 
 ---
 
-### T-019: MCP Tool-Set — Autonome Agents
+### T-018: MCP Tool Set — Human-Assisted
 
-**Typ:** feature
-**Abhaengigkeiten:** T-017
-**Beschreibung:**
-Zusaetzliche Tools fuer autonome Agents.
+**Type:** feature
+**Dependencies:** T-017
+**Description:**
+Additional tools for human_assisted clients (Claude Desktop, Cursor, etc.).
 
 **Tools:**
-- `update_task(id, content)` — task.md updaten
-- `create_a2a(type, proposal)` — A2A Task erstellen
-- `check_deadlocks()` — Dependency-Graph pruefen
+- `get_next_task(capabilities?)` — Next claimable task
+- `claim_task(id)` — Claim task
+- `inspect_task(id)` — Task + log + context bundle complete
+- `complete_task(id, summary)` — Complete task
+- `request_human_gate(id, reason)` — Set human gate
 
-**Akzeptanzkriterien:**
-- [ ] Alle 3 Tools implementiert
-- [ ] update_task() erstellt Log-Eintrag bei jeder Aenderung
-- [ ] create_a2a() validiert A2A-Typ
+**Acceptance Criteria:**
+- [ ] All 5 tools implemented
+- [ ] get_next_task() respects role and capabilities
+- [ ] complete_task() writes summary to log and sets status `done`
+
+---
+
+### T-019: MCP Tool Set — Autonomous Agents
+
+**Type:** feature
+**Dependencies:** T-017
+**Description:**
+Additional tools for autonomous agents.
+
+**Tools:**
+- `update_task(id, content)` — Update task.md
+- `create_a2a(type, proposal)` — Create A2A task
+- `check_deadlocks()` — Check dependency graph
+
+**Acceptance Criteria:**
+- [ ] All 3 tools implemented
+- [ ] update_task() creates log entry on every change
+- [ ] create_a2a() validates A2A type
 
 ---
 
@@ -536,167 +536,167 @@ Zusaetzliche Tools fuer autonome Agents.
 
 ### T-020: Notification Watcher
 
-**Typ:** feature
-**Abhaengigkeiten:** T-004, T-005
-**Beschreibung:**
-Leichtgewichtiger Hintergrund-Prozess der `.oriri/` beobachtet und den Menschen per OS-Notification benachrichtigt wenn etwas seine Aufmerksamkeit braucht. Kein Dashboard, keine TUI — nur Notifications.
+**Type:** feature
+**Dependencies:** T-004, T-005
+**Description:**
+Lightweight background process that watches `.oriri/` and notifies the human via OS notification when something requires their attention. No dashboard, no TUI — just notifications.
 
-Der Mensch reagiert dann in seinem MCP-Client (Claude Desktop, Cursor, etc.).
+The human then responds in their MCP client (Claude Desktop, Cursor, etc.).
 
 ```bash
 npx oriri watch
 ```
 
-**Benachrichtigt bei:**
-- **Human Gate offen** — Task hat Status `needs_human`
-- **H2A beantwortet** — Agent hat auf eine menschliche Frage geantwortet
-- **Consent offen** — A2A Abstimmung wartet auf menschlichen Vote
-- **Agent stale** — A2A `agent_silent` wurde erstellt
-- **Task fertig** — Task wechselt auf `done` (optional, konfigurierbar)
+**Notifies on:**
+- **Human gate open** — Task has status `needs_human`
+- **H2A answered** — Agent has answered a human question
+- **Consent open** — A2A vote is waiting for human vote
+- **Agent stale** — A2A `agent_silent` was created
+- **Task finished** — Task changes to `done` (optional, configurable)
 
-**Funktionsweise:**
+**How it works:**
 ```
 ┌──────────────────────────────────┐
 │  npx oriri watch                  │
 │                                  │
-│  File-Watcher auf .oriri/         │
-│  ├── tasks/*.md geaendert?       │
+│  File watcher on .oriri/         │
+│  ├── tasks/*.md changed?         │
 │  │   → Status = needs_human?     │
-│  │   → Notification senden       │
-│  ├── agent-tasks/a2a-*.md neu?   │
-│  │   → Consent noetig?           │
-│  │   → Notification senden       │
-│  └── Idle... (kein Polling,      │
-│       reagiert auf File-Events)  │
+│  │   → Send notification         │
+│  ├── agent-tasks/a2a-*.md new?   │
+│  │   → Consent needed?           │
+│  │   → Send notification         │
+│  └── Idle... (no polling,        │
+│       reacts to file events)     │
 └──────────────────────────────────┘
 
          ↓ OS Notification
 
 ┌──────────────────────────────────┐
 │  Oriri — Human Gate               │
-│  Login-Formular braucht Review   │
+│  Login form needs review         │
 │  Task: task-a3f2c1               │
 └──────────────────────────────────┘
 ```
 
-**Akzeptanzkriterien:**
-- [ ] `npx oriri watch` startet File-Watcher im Hintergrund
-- [ ] Nutzt `fs.watch` / `chokidar` auf `.oriri/` Verzeichnis
-- [ ] Sendet native OS-Notification per `node-notifier` (macOS, Linux, Windows)
-- [ ] Benachrichtigt bei: needs_human, H2A-Antwort, offener Consent, agent_silent
-- [ ] Konfigurierbar welche Events Notifications ausloesen
-- [ ] Laeuft ressourcenschonend (kein Polling, nur File-Events)
-- [ ] `npx oriri watch --stop` beendet den Watcher
+**Acceptance Criteria:**
+- [ ] `npx oriri watch` starts file watcher in the background
+- [ ] Uses `fs.watch` / `chokidar` on `.oriri/` directory
+- [ ] Sends native OS notification via `node-notifier` (macOS, Linux, Windows)
+- [ ] Notifies on: needs_human, H2A response, open consent, agent_silent
+- [ ] Configurable which events trigger notifications
+- [ ] Runs resource-efficiently (no polling, only file events)
+- [ ] `npx oriri watch --stop` stops the watcher
 
 ---
 
-## Phase 7: Resilienz
+## Phase 7: Resilience
 
-### T-025: File-Recovery & Rekonstruktion
+### T-025: File Recovery & Reconstruction
 
-**Typ:** feature
-**Abhaengigkeiten:** T-005, T-010
-**Beschreibung:**
-Resilienz-Mechanismen nach Spec Abschnitt 9. Kein Permission-System, stattdessen Rekonstruktion aus verfuegbarem Kontext bei fehlenden/beschaedigten Dateien.
+**Type:** feature
+**Dependencies:** T-005, T-010
+**Description:**
+Resilience mechanisms per Spec Section 9. No permission system, instead reconstruction from available context when files are missing/corrupted.
 
-**Rekonstruktionsquellen (absteigend nach Qualitaet):**
-1. Log-File + Agent-Memory → nahezu vollstaendig
-2. Nur Log-File → gut
-3. story.md Erwaehnung → grob
-4. Nichts → Mensch muss neu erstellen
+**Reconstruction sources (descending by quality):**
+1. Log file + agent memory → nearly complete
+2. Log file only → good
+3. story.md mention → rough
+4. Nothing → human must recreate
 
-**Akzeptanzkriterien:**
-- [ ] A2A Task `file_missing` bei fehlender task.md
-- [ ] Agent mit Memory kann task.md sofort rekonstruieren
-- [ ] Ohne Memory: Rekonstruktion aus Log-File
-- [ ] story.md Recovery wenn Client connected
-- [ ] Warnung an Menschen wenn Rekonstruktion nicht moeglich
-
----
-
-### T-026: Backup-Empfehlung & Tooling
-
-**Typ:** chore
-**Abhaengigkeiten:** T-002
-**Beschreibung:**
-Dokumentation und optionales Tooling fuer stuendliche Backups des `.oriri/` Ordners. Im Server-Modus: Snapshot-Commits ins Git-Repo.
-
-**Akzeptanzkriterien:**
-- [ ] Dokumentation fuer Cron-basiertes Backup
-- [ ] Optionaler `oriri backup` Befehl
-- [ ] Im Server-Modus: Auto-Commit Snapshot (konfigurierbar)
+**Acceptance Criteria:**
+- [ ] A2A task `file_missing` when task.md is missing
+- [ ] Agent with memory can reconstruct task.md immediately
+- [ ] Without memory: reconstruction from log file
+- [ ] story.md recovery when client connected
+- [ ] Warning to human when reconstruction is not possible
 
 ---
 
-## Phase 8: Server-Modus (Post-MVP — nicht Teil des initialen Builds)
+### T-026: Backup Recommendation & Tooling
 
-### T-027: Server-Implementierung
+**Type:** chore
+**Dependencies:** T-002
+**Description:**
+Documentation and optional tooling for hourly backups of the `.oriri/` directory. In server mode: snapshot commits to the git repo.
 
-**Typ:** feature
-**Abhaengigkeiten:** T-015, T-007
-**Beschreibung:**
-Oriri Server fuer Team-Setups nach Spec Abschnitt 2.2. Server Memory als Single Source of Truth, Disk als Persistenz, WebSocket-Broadcast fuer Echtzeit-Sync.
-
-**Akzeptanzkriterien:**
-- [ ] `oriri server start` startet Server-Prozess
-- [ ] WebSocket-basierte Verbindung
-- [ ] Server-Memory ist SOT
-- [ ] Echtzeit-Sync per Broadcast an alle Clients
-- [ ] Race Conditions per Server-seitiger Serialisierung
-- [ ] Persistenz auf Disk bei Shutdown
+**Acceptance Criteria:**
+- [ ] Documentation for cron-based backup
+- [ ] Optional `oriri backup` command
+- [ ] In server mode: auto-commit snapshot (configurable)
 
 ---
 
-### T-028: Hybrid-Modus
+## Phase 8: Server Mode (Post-MVP — not part of the initial build)
 
-**Typ:** feature
-**Abhaengigkeiten:** T-027
-**Beschreibung:**
-Hybrid-Modus nach Spec Abschnitt 2.3: Primaer lokal, optionaler Sync mit Server. Offline-faehig, automatischer Sync wenn verfuegbar.
+### T-027: Server Implementation
 
-**Akzeptanzkriterien:**
-- [ ] Offline-Arbeit wenn Server nicht erreichbar
-- [ ] Automatischer Sync wenn Server verfuegbar
-- [ ] Konflikte per Timestamp geloest (aelterer gewinnt)
-- [ ] Konfigurierbares sync_interval
+**Type:** feature
+**Dependencies:** T-015, T-007
+**Description:**
+Oriri server for team setups per Spec Section 2.2. Server memory as single source of truth, disk as persistence, WebSocket broadcast for real-time sync.
 
----
-
-### T-029: WebSocket-Transport-Adapter
-
-**Typ:** feature
-**Abhaengigkeiten:** T-027
-**Beschreibung:**
-WebSocket-Implementierung des Storage-Interface (T-002b). Wenn `mode: server` in config.md, werden alle Operationen ueber WebSocket an den Server delegiert statt direkt ins Filesystem.
-
-**Akzeptanzkriterien:**
-- [ ] Implementiert das gleiche StorageInterface wie der Filesystem-Adapter
-- [ ] Verbindet sich per `ws://` URL aus config.md
-- [ ] Alle bestehenden Features funktionieren ohne Code-Aenderung
-- [ ] Automatischer Reconnect bei Verbindungsverlust
+**Acceptance Criteria:**
+- [ ] `oriri server start` starts server process
+- [ ] WebSocket-based connection
+- [ ] Server memory is SOT
+- [ ] Real-time sync via broadcast to all clients
+- [ ] Race conditions resolved via server-side serialization
+- [ ] Persistence to disk on shutdown
 
 ---
 
-## Abhaengigkeitsgraph
+### T-028: Hybrid Mode
+
+**Type:** feature
+**Dependencies:** T-027
+**Description:**
+Hybrid mode per Spec Section 2.3: primarily local, optional sync with server. Offline-capable, automatic sync when available.
+
+**Acceptance Criteria:**
+- [ ] Offline work when server is not reachable
+- [ ] Automatic sync when server is available
+- [ ] Conflicts resolved by timestamp (older wins)
+- [ ] Configurable sync_interval
+
+---
+
+### T-029: WebSocket Transport Adapter
+
+**Type:** feature
+**Dependencies:** T-027
+**Description:**
+WebSocket implementation of the Storage Interface (T-002b). When `mode: server` in config.md, all operations are delegated via WebSocket to the server instead of directly to the filesystem.
+
+**Acceptance Criteria:**
+- [ ] Implements the same StorageInterface as the filesystem adapter
+- [ ] Connects via `ws://` URL from config.md
+- [ ] All existing features work without code changes
+- [ ] Automatic reconnect on connection loss
+
+---
+
+## Dependency Graph
 
 ```
-Phase 1 (Fundament)
+Phase 1 (Foundation)
 T-001 → T-002 → T-002b (StorageInterface!)
-                 T-003 (Config — liest config.yaml direkt, VOR Storage-Init)
+                 T-003 (Config — reads config.yaml directly, BEFORE storage init)
                  T-002b → T-004 → T-005
-                                → T-006 (braucht auch T-003)
+                                → T-006 (also needs T-003)
                                 → T-007
 
-WICHTIG: T-002b ist der Schluessel. Ab hier geht alles ueber das
-StorageInterface. Einzige Ausnahme: T-003 liest config.yaml direkt
-weil die Config bestimmt welcher Adapter genutzt wird.
+IMPORTANT: T-002b is the key. From here on, everything goes through the
+StorageInterface. Only exception: T-003 reads config.yaml directly
+because the config determines which adapter is used.
 
-Phase 2 (Agent-Runtime)
-T-003 + T-007 → T-008 (Registrierung)
-T-008 + T-004 + T-005 + T-010 → T-008b (Agent-Runner, dauerhaft)
-T-008 + T-005 + T-012 → T-009 (Self-Healing, laeuft als Teil von T-008b Idle)
+Phase 2 (Agent Runtime)
+T-003 + T-007 → T-008 (Registration)
+T-008 + T-004 + T-005 + T-010 → T-008b (Agent Runner, persistent)
+T-008 + T-005 + T-012 → T-009 (Self-Healing, runs as part of T-008b idle)
 
-Phase 3 (Gedaechtnis)
+Phase 3 (Memory)
 T-002b + T-006 → T-010 → T-011
 
 Phase 4 (A2A)
@@ -708,29 +708,29 @@ T-004 + T-005 + T-010 → T-015 → T-016 → T-017 → T-018
                                                → T-019
 
 Phase 6 (Notifications)
-T-004 + T-005 → T-020 (File-Watcher, OS-Notifications)
+T-004 + T-005 → T-020 (File watcher, OS notifications)
 
-Phase 7 (Resilienz)
+Phase 7 (Resilience)
 T-005 + T-010 → T-025
 T-002 → T-026
 
 Phase 8 (Server, Post-MVP)
 T-015 + T-007 → T-027 → T-028
-                       → T-029 (WebSocketStorage implementiert StorageInterface)
+                       → T-029 (WebSocketStorage implements StorageInterface)
 ```
 
 ---
 
-## Offene Fragen aus der Spec
+## Open Questions from the Spec
 
-| ID | Frage | Relevant fuer |
+| ID | Question | Relevant for |
 |---|---|---|
-| OQ-01 | Priority Score: Wer berechnet ihn? Manuell, automatisch, oder Agent? | T-004 |
-| OQ-02 | Human Gate Erkennung: Regelbasiert nach Task-Typ oder Agent-Entscheidung? | T-022 |
-| OQ-03 | Multi-Projekt: Eine Instanz pro Projekt oder pro Organisation? | T-002 |
-| OQ-04 | Context Bundle Groesse: Ab wann automatisch zusammenfassen? | T-004 |
-| OQ-05 | Dep-Update: Was passiert mit abhaengigen Tasks bei CHANGES_REQUESTED? | T-013 |
-| OQ-06 | Hybrid Konflikte: Exakte Strategie bei State-Divergenz? | T-028 |
-| OQ-07 | H2A Routing: COORDINATOR bevorzugt oder jeder GENERALIST? | T-023 |
-| OQ-08 | ~~CLI Technologie~~ — entfaellt, keine TUI mehr, nur Notification Watcher | — |
-| OQ-09 | Token-Tracking: Wie werden Kosten pro Agent gemessen? | T-024 |
+| OQ-01 | Priority score: Who calculates it? Manual, automatic, or agent? | T-004 |
+| OQ-02 | Human gate detection: Rule-based by task type or agent decision? | T-022 |
+| OQ-03 | Multi-project: One instance per project or per organization? | T-002 |
+| OQ-04 | Context bundle size: When to automatically summarize? | T-004 |
+| OQ-05 | Dep update: What happens to dependent tasks on CHANGES_REQUESTED? | T-013 |
+| OQ-06 | Hybrid conflicts: Exact strategy for state divergence? | T-028 |
+| OQ-07 | H2A routing: COORDINATOR preferred or any GENERALIST? | T-023 |
+| OQ-08 | ~~CLI technology~~ — removed, no TUI anymore, only notification watcher | — |
+| OQ-09 | Token tracking: How are costs measured per agent? | T-024 |
