@@ -97,8 +97,8 @@ const ROLE_PERMISSIONS: Record<AgentRole, RolePermissions> = {
 
   MCP_CLIENT: {
     tasks: {
-      claimableTypes: [],
-      claimableStatuses: [],
+      claimableTypes: ['feature', 'bug', 'chore', 'escalation'],
+      claimableStatuses: ['open'],
       canRead: true,
       canCreate: false,
     },

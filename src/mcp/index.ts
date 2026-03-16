@@ -9,3 +9,8 @@ export { createGetActiveAgentsTool } from './get-active-agents-tool.js';
 export { createCreateTaskTool } from './create-task-tool.js';
 export { createAppendLogTool } from './append-log-tool.js';
 export { createVoteTool } from './vote-tool.js';
+export { createGetNextTaskTool } from './get-next-task-tool.js';
+export { createClaimTaskTool } from './claim-task-tool.js';
+export { createInspectTaskTool } from './inspect-task-tool.js';
+export { createCompleteTaskTool } from './complete-task-tool.js';
+export { createRequestHumanGateTool } from './request-human-gate-tool.js';

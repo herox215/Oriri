@@ -536,9 +536,9 @@ Additional tools for human_assisted clients (Claude Desktop, Cursor, etc.).
 
 **Acceptance Criteria:**
 
-- [ ] All 5 tools implemented
-- [ ] get_next_task() respects role and capabilities
-- [ ] complete_task() writes summary to log and sets status `done`
+- [x] All 5 tools implemented
+- [x] get_next_task() respects role and capabilities
+- [x] complete_task() writes summary to log and sets status `done`
 
 ---
 
