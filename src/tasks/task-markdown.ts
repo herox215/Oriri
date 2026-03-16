@@ -70,3 +70,14 @@ export function replaceAssignedToInMarkdown(markdown: string, agentId: string): 
 export function clearAssignedToInMarkdown(markdown: string): string {
   return markdown.replace(/(\| assigned_to \| ).+?( \|)/, `$1—$2`);
 }
+
+export function extractDependenciesFromMarkdown(markdown: string): string[] {
+  const section = /## Dependencies\n+([\s\S]*?)(?:\n##|$)/.exec(markdown);
+  if (!section?.[1]) return [];
+  return section[1]
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith('- '))
+    .map((l) => l.slice(2).trim())
+    .filter((l) => l !== '' && l !== 'none');
+}

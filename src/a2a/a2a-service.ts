@@ -3,7 +3,11 @@ import { StorageReadError } from '../shared/errors.js';
 import { A2ANotFoundError } from '../shared/errors.js';
 import type { A2AType } from './a2a-types.js';
 import { generateA2AId } from './a2a-id.js';
-import { buildA2AMarkdown, extractA2ATargetTaskFromMarkdown, replaceA2AStatusInMarkdown } from './a2a-markdown.js';
+import {
+  buildA2AMarkdown,
+  extractA2ATargetTaskFromMarkdown,
+  replaceA2AStatusInMarkdown,
+} from './a2a-markdown.js';
 
 export interface CreateA2AInput {
   type: A2AType;
@@ -38,7 +42,10 @@ export class A2AService {
     });
 
     await this.storage.writeA2A(id, markdown);
-    await this.storage.appendA2ALog(id, formatLogLine(input.createdBy, `created A2A task: ${input.type}`));
+    await this.storage.appendA2ALog(
+      id,
+      formatLogLine(input.createdBy, `created A2A task: ${input.type}`),
+    );
 
     return id;
   }
@@ -71,7 +78,10 @@ export class A2AService {
 
     const targetTaskId = extractA2ATargetTaskFromMarkdown(markdown);
     if (targetTaskId !== null) {
-      await this.storage.appendLog(targetTaskId, formatLogLine(agentId, `(via a2a-${id} ✓) resolved`));
+      await this.storage.appendLog(
+        targetTaskId,
+        formatLogLine(agentId, `(via a2a-${id} ✓) resolved`),
+      );
     }
   }
 }

@@ -127,6 +127,13 @@ export class InvalidA2ATypeError extends OririError {
   }
 }
 
+export class DeadlockDetectionError extends OririError {
+  constructor(message: string) {
+    super(message, 'DEADLOCK_DETECTION_FAILED');
+    this.name = 'DeadlockDetectionError';
+  }
+}
+
 export class StoryArchiveError extends OririError {
   constructor(message: string) {
     super(message, 'STORY_ARCHIVE_FAILED');

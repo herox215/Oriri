@@ -429,11 +429,11 @@ Dependency graph between tasks. Detection of circular dependencies (deadlocks). 
 
 **Acceptance Criteria:**
 
-- [ ] Tasks can declare dependencies (dependency field)
-- [ ] Task with status `waiting_for_agent` when dependency is not `done`
-- [ ] checkDeadlocks() analyzes graph for cycles
-- [ ] On cycle: A2A task is created
-- [ ] Consent process resolves deadlock (e.g., remove dependency)
+- [x] Tasks can declare dependencies (dependency field)
+- [x] Task with status `waiting_for_agent` when dependency is not `done`
+- [x] checkDeadlocks() analyzes graph for cycles
+- [x] On cycle: A2A task is created
+- [x] Consent process resolves deadlock (e.g., remove dependency)
 
 ---
 
