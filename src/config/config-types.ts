@@ -10,7 +10,7 @@ export const AGENT_ROLES = [
 
 export type AgentRole = (typeof AGENT_ROLES)[number];
 
-export const LLM_PROVIDERS = ['anthropic'] as const;
+export const LLM_PROVIDERS = ['anthropic', 'mistral'] as const;
 
 export type LLMProviderType = (typeof LLM_PROVIDERS)[number];
 
