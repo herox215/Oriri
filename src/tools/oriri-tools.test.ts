@@ -70,6 +70,7 @@ describe('createOririTools', () => {
       'vote',
       'resolve_a2a',
       'list_a2a',
+      'refine_task',
       'check_consent',
     ]);
   });
@@ -204,6 +205,38 @@ describe('createOririTools', () => {
       const result = await tool.handler({});
 
       expect(result.content).toBe('No A2A tasks found.');
+    });
+  });
+
+  describe('refine_task', () => {
+    it('should call taskService.refineTask with correct args', async () => {
+      (deps.taskService as unknown as Record<string, ReturnType<typeof vi.fn>>).refineTask =
+        vi.fn().mockResolvedValue(undefined);
+
+      // Recreate tools with the updated mock
+      tools = createOririTools(deps);
+      const tool = findTool(tools, 'refine_task');
+      const result = await tool.handler({ task_id: 'abc12345', type: 'feature' });
+
+      expect(result.content).toContain('refined');
+      expect(
+        (deps.taskService as unknown as Record<string, ReturnType<typeof vi.fn>>).refineTask,
+      ).toHaveBeenCalledWith('abc12345', 'agent-alpha', {
+        type: 'feature',
+        contextBundle: undefined,
+      });
+    });
+
+    it('should return error on failure', async () => {
+      (deps.taskService as unknown as Record<string, ReturnType<typeof vi.fn>>).refineTask =
+        vi.fn().mockRejectedValue(new Error('Task is not a draft'));
+
+      tools = createOririTools(deps);
+      const tool = findTool(tools, 'refine_task');
+      const result = await tool.handler({ task_id: 'abc12345' });
+
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain('not a draft');
     });
   });
 

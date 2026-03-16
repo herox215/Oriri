@@ -53,6 +53,17 @@ export function extractStatusFromMarkdown(markdown: string): string | null {
   return match?.[1] ?? null;
 }
 
+export function replaceTypeInMarkdown(markdown: string, newType: TaskType): string {
+  return markdown.replace(/(\| type \| )\S+/, `$1${newType}`);
+}
+
+export function replaceContextBundleInMarkdown(markdown: string, newContext: string): string {
+  return markdown.replace(
+    /(## Context Bundle\n\n)[\s\S]*?(?=\n##|$)/,
+    `$1${newContext}\n`,
+  );
+}
+
 export function extractTypeFromMarkdown(markdown: string): string | null {
   const match = /\| type \| (\S+)/.exec(markdown);
   return match?.[1] ?? null;

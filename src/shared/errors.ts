@@ -71,6 +71,16 @@ export class TaskAlreadyClaimedError extends OririError {
   }
 }
 
+export class TaskNotDraftError extends OririError {
+  constructor(id: string, currentStatus: string) {
+    super(
+      `Task ${id} is not a draft (current status: ${currentStatus}), use refine_task only on draft tasks`,
+      'TASK_NOT_DRAFT',
+    );
+    this.name = 'TaskNotDraftError';
+  }
+}
+
 export class AgentNotFoundError extends OririError {
   constructor(id: string) {
     super(`Agent ${id} not found in active agents`, 'AGENT_NOT_FOUND');

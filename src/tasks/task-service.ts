@@ -3,7 +3,7 @@ import type { LogService } from '../logs/log-service.js';
 import type { RoleService } from '../agents/role-service.js';
 import type { AgentRole } from '../config/config-types.js';
 import type { TaskType } from './task-types.js';
-import { StorageReadError, TaskNotFoundError, TaskAlreadyClaimedError } from '../shared/errors.js';
+import { StorageReadError, TaskNotFoundError, TaskAlreadyClaimedError, TaskNotDraftError } from '../shared/errors.js';
 import type { CreateTaskInput, TaskStatus } from './task-types.js';
 import { generateUniqueTaskId } from './task-id.js';
 import {
@@ -12,8 +12,10 @@ import {
   extractStatusFromMarkdown,
   extractTypeFromMarkdown,
   replaceAssignedToInMarkdown,
+  replaceContextBundleInMarkdown,
   replaceDependenciesInMarkdown,
   replaceStatusInMarkdown,
+  replaceTypeInMarkdown,
 } from './task-markdown.js';
 
 export class TaskService {
@@ -101,6 +103,31 @@ export class TaskService {
       agentId,
       `dependencies set: ${dependencies.length > 0 ? dependencies.join(', ') : 'none'}`,
     );
+  }
+
+  async refineTask(
+    id: string,
+    agentId: string,
+    options?: { type?: TaskType | undefined; contextBundle?: string | undefined },
+  ): Promise<void> {
+    const markdown = await this.readTask(id);
+    const currentStatus = extractStatusFromMarkdown(markdown);
+
+    if (currentStatus !== 'draft') {
+      throw new TaskNotDraftError(id, currentStatus ?? 'unknown');
+    }
+
+    let updated = markdown;
+    if (options?.type) {
+      updated = replaceTypeInMarkdown(updated, options.type);
+    }
+    if (options?.contextBundle) {
+      updated = replaceContextBundleInMarkdown(updated, options.contextBundle);
+    }
+    updated = replaceStatusInMarkdown(updated, 'open');
+
+    await this.storage.writeTask(id, updated);
+    await this.logService.appendLog(id, agentId, 'refined task: draft → open');
   }
 
   async updateStatus(id: string, newStatus: TaskStatus, agentId: string): Promise<void> {

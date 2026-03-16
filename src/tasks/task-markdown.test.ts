@@ -5,6 +5,8 @@ import {
   extractAssignedToFromMarkdown,
   extractTypeFromMarkdown,
   replaceAssignedToInMarkdown,
+  replaceTypeInMarkdown,
+  replaceContextBundleInMarkdown,
 } from './task-markdown.js';
 
 describe('task-markdown helpers', () => {
@@ -62,6 +64,36 @@ describe('task-markdown helpers', () => {
       const assigned = replaceAssignedToInMarkdown(sampleMarkdown, 'agent-beta');
       const cleared = clearAssignedToInMarkdown(assigned);
       expect(extractAssignedToFromMarkdown(cleared)).toBe('—');
+    });
+  });
+
+  describe('replaceTypeInMarkdown', () => {
+    it('should replace the task type', () => {
+      const result = replaceTypeInMarkdown(sampleMarkdown, 'bug');
+      expect(result).toContain('| type | bug |');
+      expect(result).not.toContain('| type | feature |');
+    });
+  });
+
+  describe('replaceContextBundleInMarkdown', () => {
+    it('should replace empty context bundle', () => {
+      const result = replaceContextBundleInMarkdown(sampleMarkdown, 'New context here');
+      expect(result).toContain('## Context Bundle\n\nNew context here\n');
+    });
+
+    it('should replace existing context bundle', () => {
+      const withContext = buildTaskMarkdown({
+        id: 'abcd1234',
+        title: 'Test task',
+        type: 'feature',
+        status: 'open',
+        createdBy: 'agent-alpha',
+        createdAt: '2026-03-15T10:00:00.000Z',
+        contextBundle: 'Old context',
+      });
+      const result = replaceContextBundleInMarkdown(withContext, 'Updated context');
+      expect(result).toContain('Updated context');
+      expect(result).not.toContain('Old context');
     });
   });
 });

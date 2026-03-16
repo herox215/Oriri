@@ -5,7 +5,7 @@ import type { TaskService } from '../tasks/task-service.js';
 import type { RoleService } from './role-service.js';
 import type { AgentRegistry } from './agent-registry.js';
 import type { ShutdownController } from './agent-lifecycle.js';
-import type { LLMProvider, LLMMessage, LLMContentBlock } from '../llm/llm-provider.js';
+import type { LLMProvider, LLMMessage, LLMContentBlock, LLMToolDefinition } from '../llm/llm-provider.js';
 import type { ToolRegistry } from '../tools/tool-registry.js';
 import type { TaskStatus, TaskType } from '../tasks/task-types.js';
 import type { A2AService } from '../a2a/a2a-service.js';
@@ -26,6 +26,7 @@ const DEFAULT_STALE_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
 const MAX_RETRIES = 3;
 const MAX_TOKENS = 4096;
 const MAX_A2A_TURNS = 20;
+const MAX_REFINEMENT_TURNS = 15;
 
 export interface AgentRunnerDeps {
   storage: StorageInterface;
@@ -78,13 +79,18 @@ export class AgentRunner {
       if (taskId) {
         await this.workOnTask(taskId);
       } else {
-        const a2aId = await this.findOpenA2A();
-        if (a2aId) {
-          await this.workOnA2A(a2aId);
+        const draftId = await this.findDraft();
+        if (draftId) {
+          await this.refineDraft(draftId);
         } else {
-          await this.idleChecks();
-          if (!shutdownController.isShutdownRequested()) {
-            await this.sleep(this.deps.idleIntervalMs ?? DEFAULT_IDLE_INTERVAL_MS);
+          const a2aId = await this.findOpenA2A();
+          if (a2aId) {
+            await this.workOnA2A(a2aId);
+          } else {
+            await this.idleChecks();
+            if (!shutdownController.isShutdownRequested()) {
+              await this.sleep(this.deps.idleIntervalMs ?? DEFAULT_IDLE_INTERVAL_MS);
+            }
           }
         }
       }
@@ -202,8 +208,10 @@ export class AgentRunner {
     systemPrompt: string,
     messages: LLMMessage[],
     taskId: string,
+    toolOverrides?: LLMToolDefinition[],
   ): ReturnType<LLMProvider['createMessage']> | Promise<null> {
     const { llmProvider, agentConfig, toolRegistry, logService } = this.deps;
+    const tools = toolOverrides ?? toolRegistry.listDefinitions();
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
@@ -211,7 +219,7 @@ export class AgentRunner {
           model: agentConfig.model,
           system: systemPrompt,
           messages,
-          tools: toolRegistry.listDefinitions(),
+          tools,
           max_tokens: MAX_TOKENS,
         });
       } catch (error: unknown) {
@@ -299,6 +307,114 @@ export class AgentRunner {
 
     // suppress unused parameter warning — taskMarkdown is available for future use
     void taskMarkdown;
+
+    return parts.join('\n');
+  }
+
+  async findDraft(): Promise<string | null> {
+    const { taskService } = this.deps;
+    const ids = await taskService.listTasks();
+    for (const id of ids) {
+      try {
+        const markdown = await taskService.readTask(id);
+        const status = extractStatusFromMarkdown(markdown);
+        if (status === 'draft') return id;
+      } catch {
+        continue;
+      }
+    }
+    return null;
+  }
+
+  async refineDraft(taskId: string): Promise<void> {
+    const { taskService, logService, agentConfig, shutdownController } = this.deps;
+    const agentId = agentConfig.id;
+
+    const taskMarkdown = await taskService.readTask(taskId);
+    const storyContent = await this.safeReadStory();
+
+    await logService.appendLog(taskId, agentId, 'starting refinement');
+
+    const systemPrompt = this.buildRefinementSystemPrompt(agentConfig, storyContent);
+
+    const messages: LLMMessage[] = [
+      {
+        role: 'user',
+        content:
+          `You are refining draft task ${taskId}.\n\n${taskMarkdown}\n\n` +
+          'Analyze this draft. Decide the correct task type (feature, bug, chore, escalation). ' +
+          'If the task is too large for a single agent, create subtasks using create_task and set dependencies using set_dependencies. ' +
+          'When ready, call refine_task to promote the draft to open status.',
+      },
+    ];
+
+    const refinementToolNames = new Set([
+      'create_task', 'set_dependencies', 'refine_task',
+      'append_log', 'get_story', 'list_tasks',
+    ]);
+    const allDefs = this.deps.toolRegistry.listDefinitions();
+    const scopedDefs = allDefs.filter((d) => refinementToolNames.has(d.name));
+
+    let finished = false;
+    let turns = 0;
+    while (!finished && !shutdownController.isShutdownRequested() && turns < MAX_REFINEMENT_TURNS) {
+      turns++;
+      const response = await this.callLLMWithRetry(systemPrompt, messages, taskId, scopedDefs);
+
+      if (!response) {
+        await logService.appendLog(taskId, agentId, 'refinement LLM failed — leaving as draft');
+        return;
+      }
+
+      messages.push({ role: 'assistant', content: response.content });
+
+      for (const block of response.content) {
+        if (block.type === 'text' && block.text.trim()) {
+          await logService.appendLog(taskId, agentId, `refinement LLM: ${block.text.slice(0, 200)}`);
+        }
+      }
+
+      if (response.stop_reason === 'end_turn') {
+        finished = true;
+      } else if (response.stop_reason === 'tool_use') {
+        const toolResults = await this.executeToolCalls(response.content, taskId);
+        messages.push({ role: 'user', content: toolResults });
+
+        // Check if task was refined (status changed from draft)
+        const taskMd = await taskService.readTask(taskId);
+        const currentStatus = extractStatusFromMarkdown(taskMd);
+        if (currentStatus !== 'draft') {
+          finished = true;
+        }
+      } else {
+        messages.push({ role: 'user', content: 'Please continue.' });
+      }
+    }
+
+    await logService.appendLog(taskId, agentId, 'refinement loop finished');
+  }
+
+  private buildRefinementSystemPrompt(config: AgentConfig, storyContent: string): string {
+    const parts: string[] = [];
+
+    if (config.system_prompt) {
+      parts.push(config.system_prompt);
+    }
+
+    parts.push(`You are agent "${config.id}" with role "${config.role}".`);
+    parts.push('You are REFINING a draft task — NOT executing it.');
+
+    parts.push('\n## Project Story (Collective Memory)\n');
+    parts.push(storyContent || '(No story entries yet)');
+
+    parts.push('\n## Refinement Instructions\n');
+    parts.push('1. Read the draft task carefully.');
+    parts.push('2. Determine the correct task type (feature, bug, chore, escalation).');
+    parts.push('3. If the task is too large for a single agent, break it into subtasks using create_task.');
+    parts.push('4. Set dependencies between subtasks using set_dependencies if needed.');
+    parts.push('5. Use list_tasks to understand what already exists.');
+    parts.push('6. When analysis is complete, call refine_task with the correct type to promote the draft to open.');
+    parts.push('7. Do NOT attempt to implement the task. Your job is only to refine it.');
 
     return parts.join('\n');
   }

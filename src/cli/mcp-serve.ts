@@ -17,6 +17,7 @@ import {
   createClaimTaskTool,
   createInspectTaskTool,
   createCompleteTaskTool,
+  createRefineTaskTool,
 } from '../mcp/index.js';
 import type { AgentRegistry } from '../agents/agent-registry.js';
 import type { StoryService } from '../story/story-service.js';
@@ -62,6 +63,7 @@ export async function mcpServeCommand(
     createClaimTaskTool(taskService, registry, roleService),
     createInspectTaskTool(taskService, logService),
     createCompleteTaskTool(taskService, logService, storyService),
+    createRefineTaskTool(taskService),
   ];
 
   for (const { definition, handler } of tools) {

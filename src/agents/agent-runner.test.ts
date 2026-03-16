@@ -323,6 +323,152 @@ describe('AgentRunner', () => {
     });
   });
 
+  describe('findDraft()', () => {
+    it('should return null when no drafts exist', async () => {
+      (deps.taskService.listTasks as ReturnType<typeof vi.fn>).mockResolvedValue(['task-001']);
+      (deps.taskService.readTask as ReturnType<typeof vi.fn>).mockResolvedValue(
+        '# Test\n\n| Field | Value |\n|-------|-------|\n| id | task-001 |\n| type | feature |\n| status | open |\n| assigned_to | — |\n',
+      );
+
+      const runner = new AgentRunner(deps);
+      const result = await runner.findDraft();
+      expect(result).toBeNull();
+    });
+
+    it('should return first draft task ID', async () => {
+      (deps.taskService.listTasks as ReturnType<typeof vi.fn>).mockResolvedValue([
+        'task-001',
+        'task-002',
+      ]);
+      (deps.taskService.readTask as ReturnType<typeof vi.fn>).mockImplementation((id: string) => {
+        if (id === 'task-001') {
+          return Promise.resolve(
+            '# Open\n\n| Field | Value |\n|-------|-------|\n| id | task-001 |\n| type | feature |\n| status | open |\n| assigned_to | — |\n',
+          );
+        }
+        return Promise.resolve(
+          '# Draft\n\n| Field | Value |\n|-------|-------|\n| id | task-002 |\n| type | chore |\n| status | draft |\n| assigned_to | — |\n',
+        );
+      });
+
+      const runner = new AgentRunner(deps);
+      const result = await runner.findDraft();
+      expect(result).toBe('task-002');
+    });
+  });
+
+  describe('refineDraft()', () => {
+    it('should call LLM with refinement system prompt', async () => {
+      (deps.taskService.readTask as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce(
+          '# Draft\n\n| Field | Value |\n|-------|-------|\n| id | task-001 |\n| type | chore |\n| status | draft |\n| assigned_to | — |\n',
+        )
+        .mockResolvedValueOnce(
+          '# Draft\n\n| Field | Value |\n|-------|-------|\n| id | task-001 |\n| type | chore |\n| status | open |\n| assigned_to | — |\n',
+        );
+
+      (deps.llmProvider.createMessage as ReturnType<typeof vi.fn>).mockResolvedValue(
+        makeToolUseResponse('refine_task', { task_id: 'task-001', type: 'feature' }),
+      );
+
+      const runner = new AgentRunner(deps);
+      await runner.refineDraft('task-001');
+
+      expect(deps.llmProvider.createMessage).toHaveBeenCalledTimes(1);
+      const callArgs = (deps.llmProvider.createMessage as ReturnType<typeof vi.fn>).mock
+        .calls[0] as [{ system: string }];
+      expect(callArgs[0].system).toContain('REFINING');
+    });
+
+    it('should finish when task status changes from draft', async () => {
+      (deps.taskService.readTask as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce(
+          '# Draft\n\n| Field | Value |\n|-------|-------|\n| id | task-001 |\n| type | chore |\n| status | draft |\n| assigned_to | — |\n',
+        )
+        .mockResolvedValueOnce(
+          '# Draft\n\n| Field | Value |\n|-------|-------|\n| id | task-001 |\n| type | feature |\n| status | open |\n| assigned_to | — |\n',
+        );
+
+      (deps.llmProvider.createMessage as ReturnType<typeof vi.fn>).mockResolvedValue(
+        makeToolUseResponse('refine_task', { task_id: 'task-001', type: 'feature' }),
+      );
+
+      const runner = new AgentRunner(deps);
+      await runner.refineDraft('task-001');
+
+      // Only 1 LLM call since status changed after tool execution
+      expect(deps.llmProvider.createMessage).toHaveBeenCalledTimes(1);
+      expect(deps.logService.appendLog).toHaveBeenCalledWith(
+        'task-001',
+        'agent-alpha',
+        'refinement loop finished',
+      );
+    });
+
+    it('should leave task as draft on LLM failure', async () => {
+      (deps.taskService.readTask as ReturnType<typeof vi.fn>).mockResolvedValue(
+        '# Draft\n\n| Field | Value |\n|-------|-------|\n| id | task-001 |\n| type | chore |\n| status | draft |\n| assigned_to | — |\n',
+      );
+
+      (deps.llmProvider.createMessage as ReturnType<typeof vi.fn>).mockRejectedValue(
+        new Error('API down'),
+      );
+
+      const runner = new AgentRunner(deps);
+      const promise = runner.refineDraft('task-001');
+
+      // Advance through retry backoff delays
+      await vi.advanceTimersByTimeAsync(2000);
+      await vi.advanceTimersByTimeAsync(4000);
+
+      await promise;
+
+      expect(deps.logService.appendLog).toHaveBeenCalledWith(
+        'task-001',
+        'agent-alpha',
+        'refinement LLM failed — leaving as draft',
+      );
+    });
+
+    it('should use scoped tool set for refinement', async () => {
+      const allDefs = [
+        { name: 'list_tasks', description: '', input_schema: {} },
+        { name: 'claim_task', description: '', input_schema: {} },
+        { name: 'refine_task', description: '', input_schema: {} },
+        { name: 'create_task', description: '', input_schema: {} },
+        { name: 'complete_task', description: '', input_schema: {} },
+        { name: 'set_dependencies', description: '', input_schema: {} },
+        { name: 'append_log', description: '', input_schema: {} },
+        { name: 'get_story', description: '', input_schema: {} },
+      ];
+      (deps.toolRegistry.listDefinitions as ReturnType<typeof vi.fn>).mockReturnValue(allDefs);
+
+      (deps.taskService.readTask as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce(
+          '# Draft\n\n| Field | Value |\n|-------|-------|\n| id | task-001 |\n| type | chore |\n| status | draft |\n| assigned_to | — |\n',
+        )
+        .mockResolvedValueOnce(
+          '# Draft\n\n| Field | Value |\n|-------|-------|\n| id | task-001 |\n| type | chore |\n| status | open |\n| assigned_to | — |\n',
+        );
+
+      (deps.llmProvider.createMessage as ReturnType<typeof vi.fn>).mockResolvedValue(
+        makeToolUseResponse('refine_task', { task_id: 'task-001' }),
+      );
+
+      const runner = new AgentRunner(deps);
+      await runner.refineDraft('task-001');
+
+      const callArgs = (deps.llmProvider.createMessage as ReturnType<typeof vi.fn>).mock
+        .calls[0] as [{ tools: { name: string }[] }];
+      const toolNames = callArgs[0].tools.map((t: { name: string }) => t.name);
+      expect(toolNames).toContain('refine_task');
+      expect(toolNames).toContain('create_task');
+      expect(toolNames).toContain('set_dependencies');
+      expect(toolNames).not.toContain('claim_task');
+      expect(toolNames).not.toContain('complete_task');
+    });
+  });
+
   describe('workOnTask()', () => {
     it('should handle tool_use responses', async () => {
       // First response: tool use, second: end turn

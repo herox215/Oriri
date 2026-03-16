@@ -8,6 +8,7 @@ import { LogService } from '../logs/log-service.js';
 import {
   TaskNotFoundError,
   TaskAlreadyClaimedError,
+  TaskNotDraftError,
   PermissionDeniedError,
 } from '../shared/errors.js';
 import { RoleService } from '../agents/role-service.js';
@@ -353,6 +354,77 @@ describe('TaskService', () => {
 
     it('should throw TaskNotFoundError for non-existent task', async () => {
       await expect(service.claimTask('nonexistent', 'agent-alpha', 'CODER')).rejects.toThrow(
+        TaskNotFoundError,
+      );
+    });
+  });
+
+  describe('refineTask', () => {
+    it('should promote a draft task to open status', async () => {
+      const id = await service.createTask({
+        title: 'Draft idea',
+        type: 'chore',
+        createdBy: 'cli',
+        status: 'draft',
+      });
+
+      await service.refineTask(id, 'agent-alpha');
+      const content = await service.readTask(id);
+      expect(content).toContain('| status | open |');
+    });
+
+    it('should throw TaskNotDraftError when task is not a draft', async () => {
+      const id = await service.createTask({
+        title: 'Open task',
+        type: 'chore',
+        createdBy: 'agent-alpha',
+      });
+
+      await expect(service.refineTask(id, 'agent-alpha')).rejects.toThrow(TaskNotDraftError);
+    });
+
+    it('should update the task type when provided', async () => {
+      const id = await service.createTask({
+        title: 'Needs type change',
+        type: 'chore',
+        createdBy: 'cli',
+        status: 'draft',
+      });
+
+      await service.refineTask(id, 'agent-alpha', { type: 'feature' });
+      const content = await service.readTask(id);
+      expect(content).toContain('| type | feature |');
+      expect(content).toContain('| status | open |');
+    });
+
+    it('should update the context bundle when provided', async () => {
+      const id = await service.createTask({
+        title: 'Needs context',
+        type: 'chore',
+        createdBy: 'cli',
+        status: 'draft',
+      });
+
+      await service.refineTask(id, 'agent-alpha', { contextBundle: 'Refined context here' });
+      const content = await service.readTask(id);
+      expect(content).toContain('Refined context here');
+    });
+
+    it('should create a log entry for the refinement', async () => {
+      const id = await service.createTask({
+        title: 'Log refinement',
+        type: 'chore',
+        createdBy: 'cli',
+        status: 'draft',
+      });
+
+      await service.refineTask(id, 'agent-alpha');
+      const log = await storage.readLog(id);
+      expect(log).toContain('agent-alpha | refined task: draft → open');
+    });
+
+    it('should throw TaskNotFoundError for non-existent task', async () => {
+      await expect(service.refineTask('nonexistent', 'agent-alpha')).rejects.toThrow(
         TaskNotFoundError,
       );
     });

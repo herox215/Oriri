@@ -12,6 +12,7 @@ import type { ToolDefinition, ToolResult } from './tool-types.js';
 import type { ConsentService, VoteValue } from '../a2a/consent-service.js';
 import type { A2AService } from '../a2a/a2a-service.js';
 import { A2A_TYPES, type A2AType } from '../a2a/a2a-types.js';
+import { TASK_TYPES, type TaskType } from '../tasks/task-types.js';
 
 export interface OririToolsDeps {
   taskService: TaskService;
@@ -259,6 +260,46 @@ export function createOririTools(deps: OririToolsDeps): ToolDefinition[] {
           return ok(summaries.join('\n'));
         } catch (error: unknown) {
           return err(error instanceof Error ? error.message : 'Failed to list A2A tasks');
+        }
+      },
+    },
+    {
+      name: 'refine_task',
+      description:
+        'Refine a draft task, promoting it to open status. ' +
+        'Optionally update the task type and context. ' +
+        'Only works on tasks with status "draft". ' +
+        'Call this after you have analyzed the draft, created any necessary subtasks, and set dependencies.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          task_id: { type: 'string', description: 'The ID of the draft task to refine' },
+          type: {
+            type: 'string',
+            enum: [...TASK_TYPES],
+            description: 'Optional: the correct task type (feature, bug, chore, escalation)',
+          },
+          context: {
+            type: 'string',
+            description: 'Optional: updated context bundle',
+          },
+        },
+        required: ['task_id'],
+      },
+      async handler(input: unknown): Promise<ToolResult> {
+        try {
+          const { task_id, type, context } = input as {
+            task_id: string;
+            type?: TaskType;
+            context?: string;
+          };
+          await taskService.refineTask(task_id, agentId, {
+            type,
+            contextBundle: context,
+          });
+          return ok(`Task ${task_id} refined and promoted to open.`);
+        } catch (error: unknown) {
+          return err(error instanceof Error ? error.message : 'Failed to refine task');
         }
       },
     },
