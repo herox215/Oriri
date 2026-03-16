@@ -37,11 +37,13 @@ export function parseActiveAgentsMarkdown(content: string): ActiveAgent[] {
     const clientType = cells[6] ?? '';
     const clientSoftware = cells[7] ?? '';
     const pollIntervalStr = cells[8] ?? '';
+    const lastSeen = cells[9] ?? '';
 
     if (displayName !== '') agent.displayName = displayName;
     if (clientType !== '') agent.clientType = clientType as McpClientType;
     if (clientSoftware !== '') agent.clientSoftware = clientSoftware;
     if (pollIntervalStr !== '') agent.pollInterval = parseInt(pollIntervalStr, 10);
+    if (lastSeen !== '') agent.lastSeen = lastSeen;
 
     agents.push(agent);
   }
@@ -56,7 +58,8 @@ export function buildActiveAgentsMarkdown(agents: ActiveAgent[]): string {
     const clientType = agent.clientType ?? '';
     const clientSoftware = agent.clientSoftware ?? '';
     const pollInterval = agent.pollInterval !== undefined ? String(agent.pollInterval) : '';
-    content += `| ${agent.id} | ${agent.role} | ${agent.model} | ${String(agent.pid)} | ${agent.since} | ${displayName} | ${clientType} | ${clientSoftware} | ${pollInterval} |\n`;
+    const lastSeen = agent.lastSeen ?? '';
+    content += `| ${agent.id} | ${agent.role} | ${agent.model} | ${String(agent.pid)} | ${agent.since} | ${displayName} | ${clientType} | ${clientSoftware} | ${pollInterval} | ${lastSeen} |\n`;
   }
   return content;
 }

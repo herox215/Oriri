@@ -46,6 +46,8 @@ function createMockDeps(overrides?: Partial<AgentRunnerDeps>): AgentRunnerDeps {
       isRegistered: vi.fn().mockResolvedValue(true),
       register: vi.fn(),
       deregister: vi.fn(),
+      listAgents: vi.fn().mockResolvedValue([]),
+      updateLastSeen: vi.fn().mockResolvedValue(undefined),
     } as unknown as AgentRunnerDeps['registry'],
     llmProvider: {
       createMessage: vi.fn(),

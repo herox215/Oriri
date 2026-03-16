@@ -60,12 +60,14 @@ export async function agentStartCommand(options: AgentStartOptions): Promise<voi
   );
   toolRegistry.registerAll(createCodeTools({ projectRoot }));
 
+  const now = new Date().toISOString();
   await registry.register({
     id: agentConfig.id,
     role: agentConfig.role,
     model: agentConfig.model,
     pid: process.pid,
-    since: new Date().toISOString(),
+    since: now,
+    lastSeen: now,
   });
 
   const shutdownController = setupGracefulShutdown(agentConfig.id, registry);

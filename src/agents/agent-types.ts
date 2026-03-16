@@ -8,6 +8,7 @@ export interface ActiveAgent {
   model: string;
   pid: number;
   since: string;
+  lastSeen?: string;
   // MCP client fields (optional)
   displayName?: string;
   clientType?: McpClientType;

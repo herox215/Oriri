@@ -46,6 +46,12 @@ export class McpServer {
         isError: true,
       };
     }
+
+    // Update lastSeen heartbeat (best-effort, don't block on failure)
+    if (this.registry && this.registeredAgentId) {
+      this.registry.updateLastSeen(this.registeredAgentId).catch(() => {});
+    }
+
     try {
       return await tool.handler(args);
     } catch (error) {
@@ -75,13 +81,15 @@ export class McpServer {
       const agentId = `mcp-${Date.now()}`;
       this.registeredAgentId = agentId;
 
+      const now = new Date().toISOString();
       try {
         await this.registry.register({
           id: agentId,
           role: 'MCP_CLIENT',
           model: 'unknown',
           pid: 0,
-          since: new Date().toISOString(),
+          since: now,
+          lastSeen: now,
           displayName: clientName,
           clientType: 'human_assisted',
           clientSoftware: clientName,

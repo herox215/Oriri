@@ -18,6 +18,7 @@ import {
 } from '../tasks/task-markdown.js';
 import { extractA2AStatusFromMarkdown } from '../a2a/a2a-markdown.js';
 import { StaleTaskDetector } from './stale-task-detector.js';
+import { StaleAgentDetector } from './stale-agent-detector.js';
 import { DeadlockDetector } from '../tasks/deadlock-detector.js';
 
 const DEFAULT_IDLE_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
@@ -228,7 +229,7 @@ export class AgentRunner {
     content: LLMContentBlock[],
     taskId: string,
   ): Promise<LLMContentBlock[]> {
-    const { toolRegistry, logService, agentConfig } = this.deps;
+    const { toolRegistry, logService, agentConfig, registry } = this.deps;
     const results: LLMContentBlock[] = [];
 
     for (const block of content) {
@@ -254,6 +255,13 @@ export class AgentRunner {
         content: result.content,
         is_error: result.isError,
       });
+    }
+
+    // Update lastSeen heartbeat (best-effort)
+    try {
+      await registry.updateLastSeen(agentConfig.id);
+    } catch {
+      // Don't fail on heartbeat
     }
 
     return results;
@@ -424,6 +432,13 @@ export class AgentRunner {
       console.log(
         `[${agentConfig.id}] Created A2A a2a-${a2aId} for stale task ${staleTask.taskId}`,
       );
+    }
+
+    // Clean up stale agents (dead processes, ghost MCP clients)
+    const agentDetector = new StaleAgentDetector({ registry });
+    const cleaned = await agentDetector.cleanupStaleAgents(thresholdMs, agentConfig.id);
+    for (const id of cleaned) {
+      console.log(`[${agentConfig.id}] Cleaned up stale agent: ${id}`);
     }
 
     if (agentConfig.role === 'COORDINATOR') {

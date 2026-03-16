@@ -29,6 +29,6 @@ export const RULES_MD = `# Consent Rules
 
 export const ACTIVE_AGENTS_MD = `# Active Agents
 
-| ID | Role | Model | PID | Since | Display Name | Client Type | Client Software | Poll Interval |
-|----|------|-------|-----|-------|--------------|-------------|-----------------|---------------|
+| ID | Role | Model | PID | Since | Display Name | Client Type | Client Software | Poll Interval | Last Seen |
+|----|------|-------|-----|-------|--------------|-------------|-----------------|---------------|-----------|
 `;

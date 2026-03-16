@@ -58,7 +58,7 @@ export function createRegisterTool(registry: AgentRegistry): RegisterToolResult 
       typeof args.client_software === 'string' ? args.client_software : DEFAULTS.clientSoftware;
 
     const id = `mcp-${Date.now()}`;
-    const since = new Date().toISOString();
+    const now = new Date().toISOString();
     const pollInterval = clientType === 'autonomous' ? POLL_INTERVAL_MS : undefined;
 
     await registry.register({
@@ -66,7 +66,8 @@ export function createRegisterTool(registry: AgentRegistry): RegisterToolResult 
       role: 'MCP_CLIENT',
       model,
       pid: 0,
-      since,
+      since: now,
+      lastSeen: now,
       displayName,
       clientType,
       clientSoftware,
@@ -79,7 +80,7 @@ export function createRegisterTool(registry: AgentRegistry): RegisterToolResult 
       model,
       client_type: clientType,
       client_software: clientSoftware,
-      since,
+      since: now,
     };
 
     if (pollInterval !== undefined) {

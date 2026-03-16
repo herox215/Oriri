@@ -46,6 +46,16 @@ export class AgentRegistry {
     return parseActiveAgentsMarkdown(content);
   }
 
+  async updateLastSeen(agentId: string): Promise<void> {
+    const content = await this.storage.readActiveAgents();
+    const agents = parseActiveAgentsMarkdown(content);
+    const agent = agents.find((a) => a.id === agentId);
+    if (!agent) return; // Best-effort — agent may have been deregistered concurrently
+    agent.lastSeen = new Date().toISOString();
+    const updated = buildActiveAgentsMarkdown(agents);
+    await this.storage.writeActiveAgents(updated);
+  }
+
   async clearAll(): Promise<void> {
     const content = buildActiveAgentsMarkdown([]);
     await this.storage.writeActiveAgents(content);

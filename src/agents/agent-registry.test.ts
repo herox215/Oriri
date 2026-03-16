@@ -92,6 +92,30 @@ describe('AgentRegistry', () => {
     });
   });
 
+  describe('updateLastSeen', () => {
+    it('should update lastSeen for a registered agent', async () => {
+      await registry.register(agent);
+      await registry.updateLastSeen(agent.id);
+      const agents = await registry.listAgents();
+      const lastSeen = agents[0].lastSeen;
+      expect(lastSeen).toBeDefined();
+      expect(new Date(lastSeen ?? '').getTime()).not.toBeNaN();
+    });
+
+    it('should silently skip non-existent agent', async () => {
+      await expect(registry.updateLastSeen('agent-ghost')).resolves.toBeUndefined();
+    });
+
+    it('should only update the targeted agent', async () => {
+      await registry.register(agent);
+      await registry.register(agent2);
+      await registry.updateLastSeen(agent.id);
+      const agents = await registry.listAgents();
+      expect(agents[0].lastSeen).toBeDefined();
+      expect(agents[1].lastSeen).toBeUndefined();
+    });
+  });
+
   describe('clearAll', () => {
     it('should remove all agents', async () => {
       await registry.register(agent);
