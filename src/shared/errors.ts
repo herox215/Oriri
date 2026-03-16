@@ -171,3 +171,10 @@ export class WatcherError extends OririError {
     this.name = 'WatcherError';
   }
 }
+
+export class FileRecoveryError extends OririError {
+  constructor(taskId: string, reason: string) {
+    super(`Cannot recover task ${taskId}: ${reason}`, 'FILE_RECOVERY_FAILED');
+    this.name = 'FileRecoveryError';
+  }
+}

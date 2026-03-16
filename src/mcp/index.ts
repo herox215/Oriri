@@ -17,3 +17,4 @@ export { createRequestHumanGateTool } from './request-human-gate-tool.js';
 export { createUpdateTaskTool } from './update-task-tool.js';
 export { createCreateA2ATool } from './create-a2a-tool.js';
 export { createCheckDeadlocksTool } from './check-deadlocks-tool.js';
+export { createRecoverTaskTool } from './recover-task-tool.js';

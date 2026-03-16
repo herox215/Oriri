@@ -11,6 +11,7 @@ import {
   createUpdateTaskTool,
   createCreateA2ATool,
   createCheckDeadlocksTool,
+  createRecoverTaskTool,
 } from '../mcp/index.js';
 import type { AgentRegistry } from '../agents/agent-registry.js';
 import type { StoryService } from '../story/story-service.js';
@@ -21,6 +22,7 @@ import type { RoleService } from '../agents/role-service.js';
 import type { A2AService } from '../a2a/a2a-service.js';
 import type { DeadlockDetector } from '../tasks/deadlock-detector.js';
 import type { StorageInterface } from '../storage/storage-interface.js';
+import type { FileRecoveryService } from '../tasks/file-recovery-service.js';
 
 export async function mcpServeCommand(
   registry: AgentRegistry,
@@ -32,6 +34,7 @@ export async function mcpServeCommand(
   a2aService: A2AService,
   deadlockDetector: DeadlockDetector,
   storage: StorageInterface,
+  fileRecoveryService: FileRecoveryService,
 ): Promise<void> {
   const server = new McpServer();
 
@@ -47,6 +50,7 @@ export async function mcpServeCommand(
     createUpdateTaskTool(taskService, logService, storage),
     createCreateA2ATool(a2aService),
     createCheckDeadlocksTool(deadlockDetector),
+    createRecoverTaskTool(fileRecoveryService),
   ];
 
   for (const { definition, handler } of tools) {

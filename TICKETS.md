@@ -642,11 +642,11 @@ Resilience mechanisms per Spec Section 9. No permission system, instead reconstr
 
 **Acceptance Criteria:**
 
-- [ ] A2A task `file_missing` when task.md is missing
-- [ ] Agent with memory can reconstruct task.md immediately
-- [ ] Without memory: reconstruction from log file
-- [ ] story.md recovery when client connected
-- [ ] Warning to human when reconstruction is not possible
+- [x] A2A task `file_missing` when task.md is missing
+- [x] Agent with memory can reconstruct task.md immediately
+- [x] Without memory: reconstruction from log file
+- [x] story.md recovery when client connected
+- [x] Warning to human when reconstruction is not possible
 
 ---
 

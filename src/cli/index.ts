@@ -10,6 +10,7 @@ import { StoryService } from '../story/story-service.js';
 import { ConsentService } from '../a2a/consent-service.js';
 import { A2AService } from '../a2a/a2a-service.js';
 import { DeadlockDetector } from '../tasks/deadlock-detector.js';
+import { FileRecoveryService } from '../tasks/file-recovery-service.js';
 import { initCommand } from './init.js';
 import { agentListCommand } from './agent-list.js';
 import { agentStartCommand } from './agent-start.js';
@@ -89,7 +90,8 @@ async function main(): Promise<void> {
       const registry = new AgentRegistry(storage);
       const a2aService = new A2AService(storage);
       const deadlockDetector = new DeadlockDetector({ storage, taskService, logService });
-      await mcpServeCommand(registry, storyService, taskService, logService, consentService, roleService, a2aService, deadlockDetector, storage);
+      const fileRecoveryService = new FileRecoveryService(storage, logService, a2aService, storyService);
+      await mcpServeCommand(registry, storyService, taskService, logService, consentService, roleService, a2aService, deadlockDetector, storage, fileRecoveryService);
       break;
     }
     case 'watch': {
