@@ -6,7 +6,11 @@ import type { RegisterToolResult } from './client-registration.js';
 export function createGetStoryTool(storyService: StoryService): RegisterToolResult {
   const definition: Tool = {
     name: 'get_story',
-    description: 'Read the collective memory (story.md) — shared context for all agents.',
+    description:
+      'START HERE. Read this first before doing anything else. ' +
+      'The story is the collective memory of the project — it tells you what happened, ' +
+      'what is going on, and what decisions were made. ' +
+      'Always read the story before listing or inspecting individual tasks.',
     inputSchema: { type: 'object', properties: {} },
   };
 

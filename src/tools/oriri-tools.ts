@@ -127,7 +127,10 @@ export function createOririTools(deps: OririToolsDeps): ToolDefinition[] {
     {
       name: 'get_story',
       description:
-        'Read the project story (story.md) — the collective memory shared by all agents. Use this for context.',
+        'START HERE. Read this first before doing anything else. ' +
+        'The story is the collective memory of the project — it tells you what happened, ' +
+        'what is going on, and what decisions were made. ' +
+        'Always read the story before listing or inspecting individual tasks.',
       inputSchema: { type: 'object', properties: {} },
       async handler(): Promise<ToolResult> {
         try {
