@@ -8,6 +8,9 @@ import {
   createCreateTaskTool,
   createAppendLogTool,
   createVoteTool,
+  createUpdateTaskTool,
+  createCreateA2ATool,
+  createCheckDeadlocksTool,
 } from '../mcp/index.js';
 import type { AgentRegistry } from '../agents/agent-registry.js';
 import type { StoryService } from '../story/story-service.js';
@@ -15,6 +18,9 @@ import type { TaskService } from '../tasks/task-service.js';
 import type { LogService } from '../logs/log-service.js';
 import type { ConsentService } from '../a2a/consent-service.js';
 import type { RoleService } from '../agents/role-service.js';
+import type { A2AService } from '../a2a/a2a-service.js';
+import type { DeadlockDetector } from '../tasks/deadlock-detector.js';
+import type { StorageInterface } from '../storage/storage-interface.js';
 
 export async function mcpServeCommand(
   registry: AgentRegistry,
@@ -23,6 +29,9 @@ export async function mcpServeCommand(
   logService: LogService,
   consentService: ConsentService,
   roleService: RoleService,
+  a2aService: A2AService,
+  deadlockDetector: DeadlockDetector,
+  storage: StorageInterface,
 ): Promise<void> {
   const server = new McpServer();
 
@@ -35,6 +44,9 @@ export async function mcpServeCommand(
     createCreateTaskTool(taskService, registry, roleService),
     createAppendLogTool(logService),
     createVoteTool(consentService, registry),
+    createUpdateTaskTool(taskService, logService, storage),
+    createCreateA2ATool(a2aService),
+    createCheckDeadlocksTool(deadlockDetector),
   ];
 
   for (const { definition, handler } of tools) {

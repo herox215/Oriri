@@ -14,3 +14,6 @@ export { createClaimTaskTool } from './claim-task-tool.js';
 export { createInspectTaskTool } from './inspect-task-tool.js';
 export { createCompleteTaskTool } from './complete-task-tool.js';
 export { createRequestHumanGateTool } from './request-human-gate-tool.js';
+export { createUpdateTaskTool } from './update-task-tool.js';
+export { createCreateA2ATool } from './create-a2a-tool.js';
+export { createCheckDeadlocksTool } from './check-deadlocks-tool.js';

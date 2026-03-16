@@ -557,9 +557,9 @@ Additional tools for autonomous agents.
 
 **Acceptance Criteria:**
 
-- [ ] All 3 tools implemented
-- [ ] update_task() creates log entry on every change
-- [ ] create_a2a() validates A2A type
+- [x] All 3 tools implemented
+- [x] update_task() creates log entry on every change
+- [x] create_a2a() validates A2A type
 
 ---
 
