@@ -190,6 +190,137 @@ describe('AgentRunner', () => {
     });
   });
 
+  describe('findOpenA2A()', () => {
+    it('should return null when no a2aService is provided', async () => {
+      const runner = new AgentRunner(deps);
+      const result = await runner.findOpenA2A();
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when no open A2As exist', async () => {
+      deps.a2aService = {
+        listA2A: vi.fn().mockResolvedValue([]),
+        readA2A: vi.fn(),
+        resolveA2A: vi.fn(),
+        createA2A: vi.fn(),
+      } as unknown as AgentRunnerDeps['a2aService'];
+
+      const runner = new AgentRunner(deps);
+      const result = await runner.findOpenA2A();
+
+      expect(result).toBeNull();
+    });
+
+    it('should return first open A2A ID', async () => {
+      deps.a2aService = {
+        listA2A: vi.fn().mockResolvedValue(['a2a-001', 'a2a-002']),
+        readA2A: vi.fn().mockImplementation((id: string) => {
+          if (id === 'a2a-001') {
+            return Promise.resolve(
+              '# A2A\n\n| Field | Value |\n|-------|-------|\n| status | resolved |\n',
+            );
+          }
+          return Promise.resolve(
+            '# A2A\n\n| Field | Value |\n|-------|-------|\n| status | open |\n',
+          );
+        }),
+        resolveA2A: vi.fn(),
+        createA2A: vi.fn(),
+      } as unknown as AgentRunnerDeps['a2aService'];
+
+      const runner = new AgentRunner(deps);
+      const result = await runner.findOpenA2A();
+
+      expect(result).toBe('a2a-002');
+    });
+  });
+
+  describe('workOnA2A()', () => {
+    it('should return immediately if a2aService is missing', async () => {
+      const runner = new AgentRunner(deps);
+      await runner.workOnA2A('a2a-001');
+
+      expect(deps.llmProvider.createMessage).not.toHaveBeenCalled();
+    });
+
+    it('should call LLM with A2A context and resolve on end_turn', async () => {
+      deps.a2aService = {
+        listA2A: vi.fn().mockResolvedValue(['a2a-001']),
+        readA2A: vi.fn().mockResolvedValue(
+          '# A2A: conflict_flag\n\n| Field | Value |\n|-------|-------|\n| id | a2a-001 |\n| type | conflict_flag |\n| status | open |\n',
+        ),
+        resolveA2A: vi.fn(),
+        createA2A: vi.fn(),
+      } as unknown as AgentRunnerDeps['a2aService'];
+      deps.consentService = {
+        vote: vi.fn(),
+        checkConsent: vi.fn().mockResolvedValue({
+          outcome: 'pending',
+          yesCount: 0,
+          noCount: 0,
+          totalEligible: 0,
+          detail: 'No voters configured',
+        }),
+      } as unknown as AgentRunnerDeps['consentService'];
+      deps.agentConfig = {
+        ...deps.agentConfig,
+        role: 'COORDINATOR',
+      };
+
+      (deps.llmProvider.createMessage as ReturnType<typeof vi.fn>).mockResolvedValue(
+        makeEndTurnResponse('A2A analyzed, no action needed.'),
+      );
+
+      const runner = new AgentRunner(deps);
+      await runner.workOnA2A('a2a-001');
+
+      expect(deps.llmProvider.createMessage).toHaveBeenCalledTimes(1);
+      const callArgs = (deps.llmProvider.createMessage as ReturnType<typeof vi.fn>).mock
+        .calls[0] as [{ system: string; messages: { content: string }[] }];
+      expect(callArgs[0].system).toContain('COORDINATOR');
+      expect(callArgs[0].messages[0].content).toContain('a2a-001');
+    });
+
+    it('should stop when A2A is resolved via tool call', async () => {
+      deps.a2aService = {
+        listA2A: vi.fn().mockResolvedValue(['a2a-001']),
+        readA2A: vi
+          .fn()
+          .mockResolvedValueOnce(
+            '# A2A\n\n| Field | Value |\n|-------|-------|\n| id | a2a-001 |\n| type | agent_silent |\n| status | open |\n',
+          )
+          .mockResolvedValueOnce(
+            '# A2A\n\n| Field | Value |\n|-------|-------|\n| id | a2a-001 |\n| type | agent_silent |\n| status | resolved |\n',
+          ),
+        resolveA2A: vi.fn(),
+        createA2A: vi.fn(),
+      } as unknown as AgentRunnerDeps['a2aService'];
+      deps.consentService = {
+        vote: vi.fn(),
+        checkConsent: vi.fn().mockResolvedValue({
+          outcome: 'pending',
+          yesCount: 0,
+          noCount: 0,
+          totalEligible: 0,
+          detail: '',
+        }),
+      } as unknown as AgentRunnerDeps['consentService'];
+      deps.agentConfig = { ...deps.agentConfig, role: 'COORDINATOR' };
+
+      (deps.llmProvider.createMessage as ReturnType<typeof vi.fn>).mockResolvedValue(
+        makeToolUseResponse('resolve_a2a', { a2a_id: 'a2a-001' }),
+      );
+
+      const runner = new AgentRunner(deps);
+      await runner.workOnA2A('a2a-001');
+
+      expect(deps.toolRegistry.execute).toHaveBeenCalledWith('resolve_a2a', { a2a_id: 'a2a-001' });
+      // Only 1 LLM call since A2A gets resolved after tool execution
+      expect(deps.llmProvider.createMessage).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('workOnTask()', () => {
     it('should handle tool_use responses', async () => {
       // First response: tool use, second: end turn

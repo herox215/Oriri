@@ -28,7 +28,16 @@ function createMockDeps(): OririToolsDeps {
     } as unknown as OririToolsDeps['storage'],
     consentService: {
       vote: vi.fn().mockResolvedValue(undefined),
+      checkConsent: vi
+        .fn()
+        .mockResolvedValue({ outcome: 'pending', yesCount: 0, noCount: 0, totalEligible: 0, detail: '' }),
     } as unknown as OririToolsDeps['consentService'],
+    a2aService: {
+      createA2A: vi.fn().mockResolvedValue('a2a-123'),
+      readA2A: vi.fn().mockResolvedValue('# A2A markdown'),
+      listA2A: vi.fn().mockResolvedValue([]),
+      resolveA2A: vi.fn().mockResolvedValue(undefined),
+    } as unknown as OririToolsDeps['a2aService'],
     agentId: 'agent-alpha',
     role: 'CODER',
   };
@@ -59,6 +68,9 @@ describe('createOririTools', () => {
       'get_story',
       'create_a2a',
       'vote',
+      'resolve_a2a',
+      'list_a2a',
+      'check_consent',
     ]);
   });
 
@@ -150,13 +162,59 @@ describe('createOririTools', () => {
     });
   });
 
-  describe('create_a2a stub', () => {
-    it('should return not implemented error', async () => {
+  describe('create_a2a', () => {
+    it('should create an A2A task', async () => {
       const tool = findTool(tools, 'create_a2a');
-      const result = await tool.handler({ type: 'agent_silent', description: 'test' });
+      const result = await tool.handler({ type: 'conflict_flag', description: 'test conflict' });
+
+      expect(result.isError).toBeUndefined();
+      expect(result.content).toContain('a2a-123');
+      expect(deps.a2aService.createA2A).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'conflict_flag',
+          createdBy: 'agent-alpha',
+          description: 'test conflict',
+        }),
+      );
+    });
+
+    it('should reject invalid A2A type', async () => {
+      const tool = findTool(tools, 'create_a2a');
+      const result = await tool.handler({ type: 'invalid_type', description: 'test' });
 
       expect(result.isError).toBe(true);
-      expect(result.content).toContain('not yet implemented');
+      expect(result.content).toContain('Invalid A2A type');
+    });
+  });
+
+  describe('resolve_a2a', () => {
+    it('should resolve an A2A task', async () => {
+      const tool = findTool(tools, 'resolve_a2a');
+      const result = await tool.handler({ a2a_id: 'abc12345' });
+
+      expect(result.isError).toBeUndefined();
+      expect(result.content).toContain('resolved');
+      expect(deps.a2aService.resolveA2A).toHaveBeenCalledWith('abc12345', 'agent-alpha');
+    });
+  });
+
+  describe('list_a2a', () => {
+    it('should return empty message when no A2As', async () => {
+      const tool = findTool(tools, 'list_a2a');
+      const result = await tool.handler({});
+
+      expect(result.content).toBe('No A2A tasks found.');
+    });
+  });
+
+  describe('check_consent', () => {
+    it('should return consent result as JSON', async () => {
+      const tool = findTool(tools, 'check_consent');
+      const result = await tool.handler({ a2a_id: 'abc12345' });
+
+      expect(result.isError).toBeUndefined();
+      const parsed = JSON.parse(result.content) as Record<string, unknown>;
+      expect(parsed).toHaveProperty('outcome', 'pending');
     });
   });
 

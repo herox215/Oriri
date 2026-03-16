@@ -12,6 +12,8 @@ import { createLLMProvider } from '../llm/create-llm-provider.js';
 import { ToolRegistry } from '../tools/tool-registry.js';
 import { createOririTools } from '../tools/oriri-tools.js';
 import { createCodeTools } from '../tools/code-tools.js';
+import { ConsentService } from '../a2a/consent-service.js';
+import { A2AService } from '../a2a/a2a-service.js';
 import { AgentConfigNotFoundError } from '../shared/errors.js';
 
 export interface AgentStartOptions {
@@ -38,6 +40,8 @@ export async function agentStartCommand(options: AgentStartOptions): Promise<voi
   const roleService = new RoleService();
   const taskService = new TaskService(storage, logService, roleService);
   const registry = new AgentRegistry(storage);
+  const consentService = new ConsentService(storage, roleService);
+  const a2aService = new A2AService(storage);
 
   const provider = agentConfig.provider ?? 'anthropic';
   const llmProvider = createLLMProvider(provider, agentConfig.api_key);
@@ -48,6 +52,8 @@ export async function agentStartCommand(options: AgentStartOptions): Promise<voi
       taskService,
       logService,
       storage,
+      consentService,
+      a2aService,
       agentId: agentConfig.id,
       role: agentConfig.role,
     }),
@@ -79,6 +85,8 @@ export async function agentStartCommand(options: AgentStartOptions): Promise<voi
     agentConfig,
     shutdownController,
     projectRoot,
+    a2aService,
+    consentService,
   });
 
   await runner.run();

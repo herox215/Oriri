@@ -7,14 +7,18 @@ import {
   extractTypeFromMarkdown,
   extractAssignedToFromMarkdown,
 } from '../tasks/task-markdown.js';
+import { extractA2AStatusFromMarkdown } from '../a2a/a2a-markdown.js';
 import type { ToolDefinition, ToolResult } from './tool-types.js';
 import type { ConsentService, VoteValue } from '../a2a/consent-service.js';
+import type { A2AService } from '../a2a/a2a-service.js';
+import { A2A_TYPES, type A2AType } from '../a2a/a2a-types.js';
 
 export interface OririToolsDeps {
   taskService: TaskService;
   logService: LogService;
   storage: StorageInterface;
   consentService: ConsentService;
+  a2aService: A2AService;
   agentId: string;
   role: AgentRole;
 }
@@ -28,7 +32,7 @@ function err(content: string): ToolResult {
 }
 
 export function createOririTools(deps: OririToolsDeps): ToolDefinition[] {
-  const { taskService, logService, storage, consentService, agentId, role } = deps;
+  const { taskService, logService, storage, consentService, a2aService, agentId, role } = deps;
 
   return [
     {
@@ -143,19 +147,44 @@ export function createOririTools(deps: OririToolsDeps): ToolDefinition[] {
     },
     {
       name: 'create_a2a',
-      description: 'Create an agent-to-agent coordination task. (Not yet implemented — T-012)',
+      description:
+        'Create an agent-to-agent coordination task. Types: merge_proposal, split_proposal, dependency_discovery, agent_silent, deadlock_detected, story_archive, file_missing, conflict_flag, rules_change.',
       inputSchema: {
         type: 'object',
         properties: {
-          type: { type: 'string', description: 'The A2A task type' },
+          type: {
+            type: 'string',
+            enum: [...A2A_TYPES],
+            description: 'The A2A task type',
+          },
           description: { type: 'string', description: 'Description of the coordination request' },
+          target_task_id: {
+            type: 'string',
+            description: 'Optional: the task this A2A relates to',
+          },
         },
         required: ['type', 'description'],
       },
-      handler(): Promise<ToolResult> {
-        return Promise.resolve(
-          err('A2A system is not yet implemented (T-012). Cannot create A2A tasks.'),
-        );
+      async handler(input: unknown): Promise<ToolResult> {
+        try {
+          const { type: a2aType, description: desc, target_task_id } = input as {
+            type: string;
+            description: string;
+            target_task_id?: string;
+          };
+          if (!A2A_TYPES.includes(a2aType as A2AType)) {
+            return err(`Invalid A2A type: ${a2aType}`);
+          }
+          const id = await a2aService.createA2A({
+            type: a2aType as A2AType,
+            createdBy: agentId,
+            description: desc,
+            ...(target_task_id !== undefined ? { targetTaskId: target_task_id } : {}),
+          });
+          return ok(`A2A task created: ${id}`);
+        } catch (error: unknown) {
+          return err(error instanceof Error ? error.message : 'Failed to create A2A task');
+        }
       },
     },
     {
@@ -181,6 +210,76 @@ export function createOririTools(deps: OririToolsDeps): ToolDefinition[] {
           return ok(`Vote ${voteValue} cast on A2A task ${a2a_id}.`);
         } catch (error: unknown) {
           return err(error instanceof Error ? error.message : 'Failed to cast vote');
+        }
+      },
+    },
+    {
+      name: 'resolve_a2a',
+      description:
+        'Resolve an A2A coordination task. Call this when you have finished processing an A2A task.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          a2a_id: { type: 'string', description: 'The A2A task ID to resolve' },
+        },
+        required: ['a2a_id'],
+      },
+      async handler(input: unknown): Promise<ToolResult> {
+        try {
+          const { a2a_id } = input as { a2a_id: string };
+          await a2aService.resolveA2A(a2a_id, agentId);
+          return ok(`A2A task ${a2a_id} resolved.`);
+        } catch (error: unknown) {
+          return err(error instanceof Error ? error.message : 'Failed to resolve A2A task');
+        }
+      },
+    },
+    {
+      name: 'list_a2a',
+      description:
+        'List all A2A coordination tasks with their ID, type, and status.',
+      inputSchema: { type: 'object', properties: {} },
+      async handler(): Promise<ToolResult> {
+        try {
+          const ids = await a2aService.listA2A();
+          if (ids.length === 0) {
+            return ok('No A2A tasks found.');
+          }
+
+          const summaries: string[] = [];
+          for (const id of ids) {
+            try {
+              const markdown = await a2aService.readA2A(id);
+              const status = extractA2AStatusFromMarkdown(markdown) ?? 'unknown';
+              summaries.push(`- ${id}: (${status})`);
+            } catch {
+              summaries.push(`- ${id}: (error reading)`);
+            }
+          }
+          return ok(summaries.join('\n'));
+        } catch (error: unknown) {
+          return err(error instanceof Error ? error.message : 'Failed to list A2A tasks');
+        }
+      },
+    },
+    {
+      name: 'check_consent',
+      description:
+        'Check the consent status of an A2A task. Returns the voting outcome (accepted/rejected/pending) with vote counts.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          a2a_id: { type: 'string', description: 'The A2A task ID to check' },
+        },
+        required: ['a2a_id'],
+      },
+      async handler(input: unknown): Promise<ToolResult> {
+        try {
+          const { a2a_id } = input as { a2a_id: string };
+          const result = await consentService.checkConsent(a2a_id);
+          return ok(JSON.stringify(result));
+        } catch (error: unknown) {
+          return err(error instanceof Error ? error.message : 'Failed to check consent');
         }
       },
     },

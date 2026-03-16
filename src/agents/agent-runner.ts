@@ -8,18 +8,23 @@ import type { ShutdownController } from './agent-lifecycle.js';
 import type { LLMProvider, LLMMessage, LLMContentBlock } from '../llm/llm-provider.js';
 import type { ToolRegistry } from '../tools/tool-registry.js';
 import type { TaskStatus, TaskType } from '../tasks/task-types.js';
+import type { A2AService } from '../a2a/a2a-service.js';
+import type { ConsentService } from '../a2a/consent-service.js';
 import { PermissionDeniedError } from '../shared/errors.js';
 import {
   extractStatusFromMarkdown,
   extractTypeFromMarkdown,
   extractAssignedToFromMarkdown,
 } from '../tasks/task-markdown.js';
+import { extractA2AStatusFromMarkdown } from '../a2a/a2a-markdown.js';
 import { StaleTaskDetector } from './stale-task-detector.js';
+import { DeadlockDetector } from '../tasks/deadlock-detector.js';
 
 const DEFAULT_IDLE_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 const DEFAULT_STALE_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
 const MAX_RETRIES = 3;
 const MAX_TOKENS = 4096;
+const MAX_A2A_TURNS = 20;
 
 export interface AgentRunnerDeps {
   storage: StorageInterface;
@@ -32,6 +37,8 @@ export interface AgentRunnerDeps {
   agentConfig: AgentConfig;
   shutdownController: ShutdownController;
   projectRoot: string;
+  a2aService?: A2AService;
+  consentService?: ConsentService;
   idleIntervalMs?: number;
   staleTimeoutMs?: number;
 }
@@ -63,9 +70,14 @@ export class AgentRunner {
       if (taskId) {
         await this.workOnTask(taskId);
       } else {
-        await this.idleChecks();
-        if (!shutdownController.isShutdownRequested()) {
-          await this.sleep(this.deps.idleIntervalMs ?? DEFAULT_IDLE_INTERVAL_MS);
+        const a2aId = await this.findOpenA2A();
+        if (a2aId) {
+          await this.workOnA2A(a2aId);
+        } else {
+          await this.idleChecks();
+          if (!shutdownController.isShutdownRequested()) {
+            await this.sleep(this.deps.idleIntervalMs ?? DEFAULT_IDLE_INTERVAL_MS);
+          }
         }
       }
     }
@@ -276,6 +288,118 @@ export class AgentRunner {
     return parts.join('\n');
   }
 
+  async findOpenA2A(): Promise<string | null> {
+    const { a2aService } = this.deps;
+    if (!a2aService) return null;
+
+    const ids = await a2aService.listA2A();
+    for (const id of ids) {
+      try {
+        const markdown = await a2aService.readA2A(id);
+        const status = extractA2AStatusFromMarkdown(markdown);
+        if (status === 'open') return id;
+      } catch {
+        continue;
+      }
+    }
+    return null;
+  }
+
+  async workOnA2A(a2aId: string): Promise<void> {
+    const { a2aService, consentService, agentConfig, shutdownController } = this.deps;
+    if (!a2aService || !consentService) return;
+
+    const agentId = agentConfig.id;
+    const a2aMarkdown = await a2aService.readA2A(a2aId);
+    const storyContent = await this.safeReadStory();
+    const consentResult = await consentService.checkConsent(a2aId);
+    const consentSummary = `Consent status: ${consentResult.outcome} (${String(consentResult.yesCount)} yes, ${String(consentResult.noCount)} no, ${String(consentResult.totalEligible)} eligible). ${consentResult.detail}`;
+
+    const systemPrompt = this.buildA2ASystemPrompt(agentConfig, storyContent);
+
+    const messages: LLMMessage[] = [
+      {
+        role: 'user',
+        content:
+          `You are processing A2A coordination task ${a2aId}.\n\n` +
+          `${a2aMarkdown}\n\n${consentSummary}\n\n` +
+          'Analyze this A2A task and take appropriate action using the available tools. ' +
+          'If consent is accepted, execute the proposed action and call resolve_a2a. ' +
+          'If consent is rejected, call resolve_a2a to close it. ' +
+          'If consent is pending and you need to vote, cast your vote. ' +
+          'If no voters are configured, decide and act directly, then call resolve_a2a.',
+      },
+    ];
+
+    console.log(`[${agentId}] Processing A2A ${a2aId}`);
+
+    let finished = false;
+    let turns = 0;
+    while (!finished && !shutdownController.isShutdownRequested() && turns < MAX_A2A_TURNS) {
+      turns++;
+      const response = await this.callLLMWithRetry(systemPrompt, messages, a2aId);
+
+      if (!response) {
+        console.log(`[${agentId}] LLM API failed for A2A ${a2aId} — skipping`);
+        return;
+      }
+
+      messages.push({ role: 'assistant', content: response.content });
+
+      for (const block of response.content) {
+        if (block.type === 'text' && block.text.trim()) {
+          console.log(`[${agentId}] A2A LLM: ${block.text.slice(0, 200)}`);
+        }
+      }
+
+      if (response.stop_reason === 'end_turn') {
+        finished = true;
+      } else if (response.stop_reason === 'tool_use') {
+        const toolResults = await this.executeToolCalls(response.content, a2aId);
+        messages.push({ role: 'user', content: toolResults });
+
+        // Check if A2A was resolved
+        const a2aMd = await a2aService.readA2A(a2aId);
+        const currentStatus = extractA2AStatusFromMarkdown(a2aMd);
+        if (currentStatus === 'resolved') {
+          finished = true;
+        }
+      } else {
+        messages.push({ role: 'user', content: 'Please continue.' });
+      }
+    }
+
+    if (turns >= MAX_A2A_TURNS) {
+      console.log(`[${agentId}] A2A ${a2aId} hit max turns (${String(MAX_A2A_TURNS)}) — leaving open for next cycle`);
+    }
+  }
+
+  private buildA2ASystemPrompt(config: AgentConfig, storyContent: string): string {
+    const parts: string[] = [];
+
+    if (config.system_prompt) {
+      parts.push(config.system_prompt);
+    }
+
+    parts.push(`You are agent "${config.id}" with role COORDINATOR.`);
+    parts.push('You process agent-to-agent (A2A) coordination tasks.');
+    parts.push(`Your capabilities: ${config.capabilities?.join(', ') ?? 'coordination'}`);
+
+    parts.push('\n## Project Story (Collective Memory)\n');
+    parts.push(storyContent || '(No story entries yet)');
+
+    parts.push('\n## Instructions\n');
+    parts.push('- Analyze the A2A task and its consent status.');
+    parts.push('- If consent is accepted, execute the proposed action (e.g., update tasks, resolve dependencies).');
+    parts.push('- If consent is rejected, resolve the A2A.');
+    parts.push('- If consent is pending and you need to vote, cast your vote with reasoning.');
+    parts.push('- If no voters are configured, decide and act directly based on the context.');
+    parts.push('- Call resolve_a2a when you are done processing.');
+    parts.push('- Use append_story to document significant decisions.');
+
+    return parts.join('\n');
+  }
+
   private async safeReadStory(): Promise<string> {
     try {
       return await this.deps.storage.readStory();
@@ -302,8 +426,15 @@ export class AgentRunner {
       );
     }
 
-    // TODO (T-012): Check for open A2A tickets, vote if applicable
-    // TODO (T-012): Check if A2A tickets exist that concern this agent's role
+    if (agentConfig.role === 'COORDINATOR') {
+      const deadlockDetector = new DeadlockDetector({ storage, taskService, logService });
+      const deadlockA2AIds = await deadlockDetector.checkDeadlocks(agentConfig.id);
+      for (const id of deadlockA2AIds) {
+        console.log(`[${agentConfig.id}] Created deadlock A2A a2a-${id}`);
+      }
+
+      await deadlockDetector.checkBlockedTasks(agentConfig.id);
+    }
   }
 
   private sleep(ms: number): Promise<void> {
