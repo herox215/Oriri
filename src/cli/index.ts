@@ -7,6 +7,7 @@ import { initCommand } from './init.js';
 import { agentListCommand } from './agent-list.js';
 import { agentStartCommand } from './agent-start.js';
 import { agentStopCommand } from './agent-stop.js';
+import { mcpServeCommand } from './mcp-serve.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -32,6 +33,7 @@ function printHelp(): void {
   console.log('  agent-start       Start an agent process');
   console.log('  agent-list        Show all registered agents');
   console.log('  agent-stop        Stop an agent or all agents');
+  console.log('  mcp-serve         Start the MCP server (stdio transport)');
   console.log('  help              Show this help message');
   console.log('');
   console.log('Run "oriri <command> --help" for more information about a command.');
@@ -64,6 +66,10 @@ async function main(): Promise<void> {
       const agentId = getArgValue(args, '--agent-id');
       const all = args.includes('--all');
       await agentStopCommand(registry, { agentId, all });
+      break;
+    }
+    case 'mcp-serve': {
+      await mcpServeCommand();
       break;
     }
     case 'help':

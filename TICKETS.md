@@ -468,11 +468,11 @@ Expose Oriri as MCP server (Spec Section 6). Uses `@modelcontextprotocol/sdk` (T
 
 **Acceptance Criteria:**
 
-- [ ] MCP server via stdio transport (local mode)
+- [x] MCP server via stdio transport (local mode)
 - [ ] Optional WebSocket transport for server mode (post-MVP)
-- [ ] Tool discovery: client can query available tools
-- [ ] Model-agnostic: any MCP-capable client can connect
-- [ ] No separate server process in local mode
+- [x] Tool discovery: client can query available tools
+- [x] Model-agnostic: any MCP-capable client can connect
+- [x] No separate server process in local mode
 
 ---
 
