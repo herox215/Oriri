@@ -112,6 +112,29 @@ describe('TaskService', () => {
       expect(log).toMatch(/^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]/);
     });
 
+    it('should use custom status when provided', async () => {
+      const id = await service.createTask({
+        title: 'Draft task',
+        type: 'chore',
+        createdBy: 'cli',
+        status: 'draft',
+      });
+
+      const content = await service.readTask(id);
+      expect(content).toContain('| status | draft |');
+    });
+
+    it('should default to open status when no status provided', async () => {
+      const id = await service.createTask({
+        title: 'Open task',
+        type: 'chore',
+        createdBy: 'agent-alpha',
+      });
+
+      const content = await service.readTask(id);
+      expect(content).toContain('| status | open |');
+    });
+
     it('should include context bundle when provided', async () => {
       const id = await service.createTask({
         title: 'Task with context',

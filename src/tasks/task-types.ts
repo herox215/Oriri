@@ -1,6 +1,7 @@
 export type TaskType = 'feature' | 'bug' | 'chore' | 'escalation';
 
 export type TaskStatus =
+  | 'draft'
   | 'open'
   | 'planning'
   | 'executing'
@@ -13,6 +14,7 @@ export type TaskStatus =
 export const TASK_TYPES: readonly TaskType[] = ['feature', 'bug', 'chore', 'escalation'] as const;
 
 export const TASK_STATUSES: readonly TaskStatus[] = [
+  'draft',
   'open',
   'planning',
   'executing',
@@ -31,4 +33,5 @@ export interface CreateTaskInput {
   createdBy: string;
   contextBundle?: string;
   dependencies?: string[];
+  status?: TaskStatus;
 }

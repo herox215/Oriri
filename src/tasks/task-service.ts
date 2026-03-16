@@ -32,7 +32,7 @@ export class TaskService {
       id,
       title: input.title,
       type: input.type,
-      status: 'open',
+      status: input.status ?? 'open',
       createdBy: input.createdBy,
       createdAt,
       contextBundle: input.contextBundle,
