@@ -71,6 +71,14 @@ export function clearAssignedToInMarkdown(markdown: string): string {
   return markdown.replace(/(\| assigned_to \| ).+?( \|)/, `$1—$2`);
 }
 
+export function replaceDependenciesInMarkdown(markdown: string, dependencies: string[]): string {
+  const deps = dependencies.length > 0 ? dependencies.map((d) => `- ${d}`).join('\n') : 'none';
+  return markdown.replace(
+    /(## Dependencies\n+)[\s\S]*?(?=\n##|$)/,
+    `$1${deps}\n`,
+  );
+}
+
 export function extractDependenciesFromMarkdown(markdown: string): string[] {
   const section = /## Dependencies\n+([\s\S]*?)(?:\n##|$)/.exec(markdown);
   if (!section?.[1]) return [];

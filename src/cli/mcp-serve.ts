@@ -12,6 +12,11 @@ import {
   createCreateA2ATool,
   createCheckDeadlocksTool,
   createRecoverTaskTool,
+  createSetDependenciesTool,
+  createAppendStoryTool,
+  createClaimTaskTool,
+  createInspectTaskTool,
+  createCompleteTaskTool,
 } from '../mcp/index.js';
 import type { AgentRegistry } from '../agents/agent-registry.js';
 import type { StoryService } from '../story/story-service.js';
@@ -37,6 +42,7 @@ export async function mcpServeCommand(
   fileRecoveryService: FileRecoveryService,
 ): Promise<void> {
   const server = new McpServer();
+  server.setRegistry(registry);
 
   const tools = [
     createRegisterTool(registry),
@@ -44,13 +50,18 @@ export async function mcpServeCommand(
     createGetTaskTool(taskService, logService),
     createListTasksTool(taskService),
     createGetActiveAgentsTool(registry),
-    createCreateTaskTool(taskService, registry, roleService),
+    createCreateTaskTool(taskService, registry, roleService, storyService),
     createAppendLogTool(logService),
     createVoteTool(consentService, registry),
     createUpdateTaskTool(taskService, logService, storage),
     createCreateA2ATool(a2aService),
     createCheckDeadlocksTool(deadlockDetector),
     createRecoverTaskTool(fileRecoveryService),
+    createSetDependenciesTool(taskService),
+    createAppendStoryTool(storyService, registry),
+    createClaimTaskTool(taskService, registry, roleService),
+    createInspectTaskTool(taskService, logService),
+    createCompleteTaskTool(taskService, logService, storyService),
   ];
 
   for (const { definition, handler } of tools) {

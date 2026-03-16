@@ -5,6 +5,7 @@ import type { RoleService } from '../agents/role-service.js';
 import type { AgentRole } from '../config/config-types.js';
 import type { TaskType } from '../tasks/task-types.js';
 import { TASK_TYPES } from '../tasks/task-types.js';
+import type { StoryService } from '../story/story-service.js';
 import type { ToolHandler } from './mcp-server.js';
 import type { RegisterToolResult } from './client-registration.js';
 
@@ -18,6 +19,7 @@ export function createCreateTaskTool(
   taskService: TaskService,
   registry: AgentRegistry,
   roleService: RoleService,
+  storyService?: StoryService,
 ): RegisterToolResult {
   const definition: Tool = {
     name: 'create_task',
@@ -38,6 +40,10 @@ export function createCreateTaskTool(
         context: {
           type: 'string',
           description: 'Optional context bundle providing background for the task',
+        },
+        created_by: {
+          type: 'string',
+          description: 'Identity of the creator (user or agent name). Falls back to client_id, then mcp-anonymous.',
         },
         dependencies: {
           type: 'array',
@@ -61,7 +67,8 @@ export function createCreateTaskTool(
     const role = await resolveRole(registry, clientId);
     roleService.checkCanCreateTask(role);
 
-    const createdBy = clientId ?? 'mcp-anonymous';
+    const explicitCreatedBy = typeof args.created_by === 'string' ? args.created_by : undefined;
+    const createdBy = explicitCreatedBy ?? clientId ?? 'mcp-anonymous';
     const id = await taskService.createTask({
       title,
       type,
@@ -69,6 +76,15 @@ export function createCreateTaskTool(
       contextBundle: context,
       dependencies,
     });
+
+    try {
+      if (storyService) {
+        const role = await resolveRole(registry, clientId);
+        await storyService.appendStory(createdBy, role, `Task ${id} created: ${title}`);
+      }
+    } catch {
+      // Story write failure should not block task creation
+    }
 
     return { content: [{ type: 'text', text: JSON.stringify({ id }) }] };
   };

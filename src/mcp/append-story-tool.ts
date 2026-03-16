@@ -1,7 +1,6 @@
 import type { Tool, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import type { TaskService } from '../tasks/task-service.js';
+import type { StoryService } from '../story/story-service.js';
 import type { AgentRegistry } from '../agents/agent-registry.js';
-import type { RoleService } from '../agents/role-service.js';
 import type { AgentRole } from '../config/config-types.js';
 import type { ToolHandler } from './mcp-server.js';
 import type { RegisterToolResult } from './client-registration.js';
@@ -12,37 +11,35 @@ async function resolveRole(registry: AgentRegistry, clientId?: string): Promise<
   return agents.find((a) => a.id === clientId)?.role ?? 'MCP_CLIENT';
 }
 
-export function createClaimTaskTool(
-  taskService: TaskService,
+export function createAppendStoryTool(
+  storyService: StoryService,
   registry: AgentRegistry,
-  _roleService: RoleService,
 ): RegisterToolResult {
   const definition: Tool = {
-    name: 'claim_task',
-    description: 'Claim an open task. Sets status to planning and assigns it to you.',
+    name: 'append_story',
+    description:
+      'Append an entry to the collective memory (story.md). Use this to document decisions, context, and important events.',
     inputSchema: {
       type: 'object',
       properties: {
-        task_id: { type: 'string', description: 'Task ID to claim (e.g. T-001)' },
+        message: { type: 'string', description: 'The story entry to append' },
         client_id: {
           type: 'string',
-          description: 'Your client ID from register(). Used to look up your role.',
+          description: 'Your client ID from register(). Used as the author of the entry.',
         },
       },
-      required: ['task_id'],
+      required: ['message'],
     },
   };
 
   const handler: ToolHandler = async (args): Promise<CallToolResult> => {
-    const id = typeof args.task_id === 'string' ? args.task_id : '';
+    const message = typeof args.message === 'string' ? args.message : '';
     const clientId = typeof args.client_id === 'string' ? args.client_id : undefined;
-
-    const role = await resolveRole(registry, clientId);
     const agentId = clientId ?? 'mcp-anonymous';
+    const role = await resolveRole(registry, clientId);
 
-    await taskService.claimTask(id, agentId, role);
-
-    return { content: [{ type: 'text', text: JSON.stringify({ ok: true, task_id: id }) }] };
+    await storyService.appendStory(agentId, role, message);
+    return { content: [{ type: 'text', text: JSON.stringify({ ok: true }) }] };
   };
 
   return { definition, handler };

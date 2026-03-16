@@ -54,7 +54,7 @@ describe('createInspectTaskTool', () => {
     const taskService = new TaskService(storage, logService, roleService);
 
     const { handler } = createInspectTaskTool(taskService, logService);
-    const result = await handler({ id: 'T-001' });
+    const result = await handler({ task_id: 'T-001' });
 
     expect(result.isError).toBeFalsy();
     const text = (result.content[0] as { text: string }).text;
@@ -71,7 +71,7 @@ describe('createInspectTaskTool', () => {
     const taskService = new TaskService(storage, logService, roleService);
 
     const { handler } = createInspectTaskTool(taskService, logService);
-    await expect(handler({ id: 'T-999' })).rejects.toThrow(TaskNotFoundError);
+    await expect(handler({ task_id: 'T-999' })).rejects.toThrow(TaskNotFoundError);
   });
 
   it('tool definition has correct name and required id', () => {
@@ -82,6 +82,6 @@ describe('createInspectTaskTool', () => {
 
     const { definition } = createInspectTaskTool(taskService, logService);
     expect(definition.name).toBe('inspect_task');
-    expect(definition.inputSchema.required).toContain('id');
+    expect(definition.inputSchema.required).toContain('task_id');
   });
 });

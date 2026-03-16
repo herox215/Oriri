@@ -12,6 +12,7 @@ import {
   extractStatusFromMarkdown,
   extractTypeFromMarkdown,
   replaceAssignedToInMarkdown,
+  replaceDependenciesInMarkdown,
   replaceStatusInMarkdown,
 } from './task-markdown.js';
 
@@ -88,6 +89,17 @@ export class TaskService {
       id,
       agentId,
       `claimed task, status: ${currentStatus} → planning`,
+    );
+  }
+
+  async setDependencies(id: string, dependencies: string[], agentId: string): Promise<void> {
+    const markdown = await this.readTask(id);
+    const updated = replaceDependenciesInMarkdown(markdown, dependencies);
+    await this.storage.writeTask(id, updated);
+    await this.logService.appendLog(
+      id,
+      agentId,
+      `dependencies set: ${dependencies.length > 0 ? dependencies.join(', ') : 'none'}`,
     );
   }
 

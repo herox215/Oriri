@@ -36,7 +36,7 @@ describe('createGetTaskTool', () => {
     const taskService = new TaskService(storage, logService, roleService);
     const { handler } = createGetTaskTool(taskService, logService);
 
-    const result = await handler({ id: 'T-001' });
+    const result = await handler({ task_id: 'T-001' });
 
     expect(result.isError).toBeFalsy();
     const text = (result.content[0] as { text: string }).text;
@@ -54,7 +54,7 @@ describe('createGetTaskTool', () => {
     const { definition } = createGetTaskTool(taskService, logService);
 
     expect(definition.name).toBe('get_task');
-    expect(definition.inputSchema.required).toContain('id');
+    expect(definition.inputSchema.required).toContain('task_id');
   });
 
   it('propagates error for unknown task id', async () => {
@@ -67,6 +67,6 @@ describe('createGetTaskTool', () => {
     const taskService = new TaskService(storage, logService, roleService);
     const { handler } = createGetTaskTool(taskService, logService);
 
-    await expect(handler({ id: 'T-999' })).rejects.toThrow();
+    await expect(handler({ task_id: 'T-999' })).rejects.toThrow();
   });
 });

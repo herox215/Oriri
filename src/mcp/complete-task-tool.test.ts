@@ -65,7 +65,7 @@ describe('createCompleteTaskTool', () => {
     const taskService = new TaskService(storage, logService, roleService);
 
     const { handler } = createCompleteTaskTool(taskService, logService);
-    const result = await handler({ id: 'T-001', summary: 'all done', client_id: 'client-abc' });
+    const result = await handler({ task_id: 'T-001', summary: 'all done', client_id: 'client-abc' });
 
     expect(result.isError).toBeFalsy();
     const data = JSON.parse((result.content[0] as { text: string }).text) as { ok: boolean };
@@ -89,7 +89,7 @@ describe('createCompleteTaskTool', () => {
 
     const { handler } = createCompleteTaskTool(taskService, logService);
     await expect(
-      handler({ id: 'T-001', summary: 'done', client_id: 'wrong-client' }),
+      handler({ task_id: 'T-001', summary: 'done', client_id: 'wrong-client' }),
     ).rejects.toThrow(PermissionDeniedError);
   });
 
@@ -101,7 +101,7 @@ describe('createCompleteTaskTool', () => {
     const taskService = new TaskService(storage, logService, roleService);
 
     const { handler } = createCompleteTaskTool(taskService, logService);
-    const result = await handler({ id: 'T-002', summary: 'finished' });
+    const result = await handler({ task_id: 'T-002', summary: 'finished' });
 
     expect(result.isError).toBeFalsy();
     expect(taskMap['T-002']).toContain('| status | done');
@@ -115,7 +115,7 @@ describe('createCompleteTaskTool', () => {
 
     const { definition } = createCompleteTaskTool(taskService, logService);
     expect(definition.name).toBe('complete_task');
-    expect(definition.inputSchema.required).toContain('id');
+    expect(definition.inputSchema.required).toContain('task_id');
     expect(definition.inputSchema.required).toContain('summary');
   });
 });

@@ -32,7 +32,7 @@ describe('createAppendLogTool', () => {
     const logService = new LogService(storage);
     const { handler } = createAppendLogTool(logService);
 
-    const result = await handler({ id: 'T-001', message: 'did some work', client_id: 'mcp-abc' });
+    const result = await handler({ task_id: 'T-001', message: 'did some work', client_id: 'mcp-abc' });
 
     expect(result.isError).toBeFalsy();
     expect(storage.appendLog).toHaveBeenCalledOnce();
@@ -50,7 +50,7 @@ describe('createAppendLogTool', () => {
     const logService = new LogService(storage);
     const { handler } = createAppendLogTool(logService);
 
-    await handler({ id: 'T-001', message: 'note' });
+    await handler({ task_id: 'T-001', message: 'note' });
 
     const [, line] = (storage.appendLog as ReturnType<typeof vi.fn>).mock.calls[0] as [
       string,
@@ -65,7 +65,7 @@ describe('createAppendLogTool', () => {
     const { definition } = createAppendLogTool(logService);
 
     expect(definition.name).toBe('append_log');
-    expect(definition.inputSchema.required).toContain('id');
+    expect(definition.inputSchema.required).toContain('task_id');
     expect(definition.inputSchema.required).toContain('message');
   });
 });

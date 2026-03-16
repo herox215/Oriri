@@ -4,7 +4,7 @@ import { LogService } from '../logs/log-service.js';
 import { AgentRegistry } from '../agents/agent-registry.js';
 import { RoleService } from '../agents/role-service.js';
 import { ACTIVE_AGENTS_MD } from '../shared/default-content.js';
-import { PermissionDeniedError } from '../shared/errors.js';
+// PermissionDeniedError no longer expected since MCP_CLIENT can create tasks
 import { createCreateTaskTool } from './create-task-tool.js';
 import type { StorageInterface } from '../storage/storage-interface.js';
 
@@ -64,7 +64,7 @@ describe('createCreateTaskTool', () => {
     expect(storage.writeTask).toHaveBeenCalledOnce();
   });
 
-  it('returns permission error for MCP_CLIENT role', async () => {
+  it('allows MCP_CLIENT role to create tasks', async () => {
     const storage = makeStorage();
     const roleService = new RoleService();
     const logService = new LogService(storage);
@@ -72,11 +72,11 @@ describe('createCreateTaskTool', () => {
     const registry = new AgentRegistry(storage);
     const { handler } = createCreateTaskTool(taskService, registry, roleService);
 
-    await expect(handler({ title: 'Task', type: 'feature' })).rejects.toThrow();
+    const result = await handler({ title: 'Task', type: 'feature' });
+    expect(result.isError).toBeFalsy();
   });
 
   it('uses mcp-anonymous as createdBy when no client_id given', async () => {
-    // This test just verifies the tool doesn't crash on missing client_id before role check
     const storage = makeStorage();
     const roleService = new RoleService();
     const logService = new LogService(storage);
@@ -84,8 +84,10 @@ describe('createCreateTaskTool', () => {
     const registry = new AgentRegistry(storage);
     const { handler } = createCreateTaskTool(taskService, registry, roleService);
 
-    // MCP_CLIENT cannot create, so it should throw PermissionDeniedError
-    await expect(handler({ title: 'Task', type: 'bug' })).rejects.toThrow(PermissionDeniedError);
+    const result = await handler({ title: 'Task', type: 'bug' });
+    expect(result.isError).toBeFalsy();
+    // Verify writeTask was called (task was created with mcp-anonymous)
+    expect(storage.writeTask).toHaveBeenCalledOnce();
   });
 
   it('tool definition has correct name and required fields', () => {

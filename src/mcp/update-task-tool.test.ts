@@ -61,7 +61,7 @@ describe('createUpdateTaskTool', () => {
 
     const { handler } = createUpdateTaskTool(taskService, logService, storage);
     const newContent = '# Updated\n\nNew content';
-    const result = await handler({ id: 'T-001', content: newContent, client_id: 'agent-x' });
+    const result = await handler({ task_id: 'T-001', content: newContent, client_id: 'agent-x' });
 
     expect(result.isError).toBeFalsy();
     const data = JSON.parse((result.content[0] as { text: string }).text) as { ok: boolean };
@@ -82,7 +82,7 @@ describe('createUpdateTaskTool', () => {
     const taskService = new TaskService(storage, logService, roleService);
 
     const { handler } = createUpdateTaskTool(taskService, logService, storage);
-    await expect(handler({ id: 'T-999', content: 'x' })).rejects.toThrow(TaskNotFoundError);
+    await expect(handler({ task_id: 'T-999', content: 'x' })).rejects.toThrow(TaskNotFoundError);
   });
 
   it('uses mcp-anonymous when no client_id provided', async () => {
@@ -93,7 +93,7 @@ describe('createUpdateTaskTool', () => {
     const taskService = new TaskService(storage, logService, roleService);
 
     const { handler } = createUpdateTaskTool(taskService, logService, storage);
-    await handler({ id: 'T-001', content: '# new' });
+    await handler({ task_id: 'T-001', content: '# new' });
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(storage.appendLog).toHaveBeenCalledWith('T-001', expect.stringContaining('mcp-anonymous'));
@@ -107,7 +107,7 @@ describe('createUpdateTaskTool', () => {
 
     const { definition } = createUpdateTaskTool(taskService, logService, storage);
     expect(definition.name).toBe('update_task');
-    expect(definition.inputSchema.required).toContain('id');
+    expect(definition.inputSchema.required).toContain('task_id');
     expect(definition.inputSchema.required).toContain('content');
   });
 });

@@ -16,23 +16,28 @@ export function createUpdateTaskTool(
     inputSchema: {
       type: 'object',
       properties: {
-        id: { type: 'string', description: 'Task ID to update (e.g. T-001)' },
+        task_id: { type: 'string', description: 'Task ID to update (e.g. T-001)' },
         content: { type: 'string', description: 'New full markdown content for the task file' },
         client_id: { type: 'string', description: 'Your client ID from register()' },
+        updated_by: {
+          type: 'string',
+          description: 'Identity of who is making this update. Falls back to client_id, then mcp-anonymous.',
+        },
       },
-      required: ['id', 'content'],
+      required: ['task_id', 'content'],
     },
   };
 
   const handler: ToolHandler = async (args): Promise<CallToolResult> => {
-    const id = typeof args.id === 'string' ? args.id : '';
+    const id = typeof args.task_id === 'string' ? args.task_id : '';
     const content = typeof args.content === 'string' ? args.content : '';
     const clientId = typeof args.client_id === 'string' ? args.client_id : undefined;
 
     // Validate task exists (throws TaskNotFoundError if not)
     await taskService.readTask(id);
 
-    const agentId = clientId ?? 'mcp-anonymous';
+    const explicitUpdatedBy = typeof args.updated_by === 'string' ? args.updated_by : undefined;
+    const agentId = explicitUpdatedBy ?? clientId ?? 'mcp-anonymous';
     await storage.writeTask(id, content);
     await logService.appendLog(id, agentId, 'task content updated');
 

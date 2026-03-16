@@ -56,15 +56,15 @@ describe('createClaimTaskTool', () => {
     const registry = new AgentRegistry(storage);
 
     const { handler } = createClaimTaskTool(taskService, registry, roleService);
-    const result = await handler({ id: 'T-001' });
+    const result = await handler({ task_id: 'T-001' });
 
     expect(result.isError).toBeFalsy();
     const data = JSON.parse((result.content[0] as { text: string }).text) as {
       ok: boolean;
-      id: string;
+      task_id: string;
     };
     expect(data.ok).toBe(true);
-    expect(data.id).toBe('T-001');
+    expect(data.task_id).toBe('T-001');
     expect(storage.writeTask).toHaveBeenCalled();
   });
 
@@ -85,7 +85,7 @@ describe('createClaimTaskTool', () => {
     const registry = new AgentRegistry(storage);
 
     const { handler } = createClaimTaskTool(taskService, registry, roleService);
-    await expect(handler({ id: 'T-002' })).rejects.toThrow(TaskAlreadyClaimedError);
+    await expect(handler({ task_id: 'T-002' })).rejects.toThrow(TaskAlreadyClaimedError);
   });
 
   it('uses client_id as the agentId when provided', async () => {
@@ -105,7 +105,7 @@ describe('createClaimTaskTool', () => {
     });
 
     const { handler } = createClaimTaskTool(taskService, registry, roleService);
-    const result = await handler({ id: 'T-001', client_id: 'client-abc' });
+    const result = await handler({ task_id: 'T-001', client_id: 'client-abc' });
 
     expect(result.isError).toBeFalsy();
     // The task markdown should be updated with assigned_to = client-abc
@@ -121,6 +121,6 @@ describe('createClaimTaskTool', () => {
 
     const { definition } = createClaimTaskTool(taskService, registry, roleService);
     expect(definition.name).toBe('claim_task');
-    expect(definition.inputSchema.required).toContain('id');
+    expect(definition.inputSchema.required).toContain('task_id');
   });
 });

@@ -14,14 +14,14 @@ export function createGetTaskTool(
     inputSchema: {
       type: 'object',
       properties: {
-        id: { type: 'string', description: 'Task ID (e.g. T-001)' },
+        task_id: { type: 'string', description: 'Task ID (e.g. T-001)' },
       },
-      required: ['id'],
+      required: ['task_id'],
     },
   };
 
   const handler: ToolHandler = async (args): Promise<CallToolResult> => {
-    const id = typeof args.id === 'string' ? args.id : '';
+    const id = typeof args.task_id === 'string' ? args.task_id : '';
     const [task, log] = await Promise.all([taskService.readTask(id), logService.getLog(id)]);
     const text = `## Task\n\n${task}\n\n## Log\n\n${log}`;
     return { content: [{ type: 'text', text }] };

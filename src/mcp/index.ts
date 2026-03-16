@@ -18,3 +18,5 @@ export { createUpdateTaskTool } from './update-task-tool.js';
 export { createCreateA2ATool } from './create-a2a-tool.js';
 export { createCheckDeadlocksTool } from './check-deadlocks-tool.js';
 export { createRecoverTaskTool } from './recover-task-tool.js';
+export { createSetDependenciesTool } from './set-dependencies-tool.js';
+export { createAppendStoryTool } from './append-story-tool.js';
