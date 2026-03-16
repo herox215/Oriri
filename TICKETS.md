@@ -485,11 +485,11 @@ Registration of MCP clients (Spec Section 6.2). Distinction between `autonomous`
 
 **Acceptance Criteria:**
 
-- [ ] register() takes display_name, model, client_type, client_software
-- [ ] Registration is optional — defaults are set without it
-- [ ] autonomous clients get a poll interval
-- [ ] human_assisted clients have no heartbeat
-- [ ] Entry appears in `agents/active.md`
+- [x] register() takes display_name, model, client_type, client_software
+- [x] Registration is optional — defaults are set without it
+- [x] autonomous clients get a poll interval
+- [x] human_assisted clients have no heartbeat
+- [x] Entry appears in `agents/active.md`
 
 ---
 

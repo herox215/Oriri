@@ -94,6 +94,18 @@ const ROLE_PERMISSIONS: Record<AgentRole, RolePermissions> = {
     story: { canRead: true, canWrite: false },
     canVote: false,
   },
+
+  MCP_CLIENT: {
+    tasks: {
+      claimableTypes: [],
+      claimableStatuses: [],
+      canRead: true,
+      canCreate: false,
+    },
+    a2a: { canCreate: false, canClaim: false, canRead: true },
+    story: { canRead: true, canWrite: false },
+    canVote: false,
+  },
 };
 
 export function getPermissionsForRole(role: AgentRole): RolePermissions {

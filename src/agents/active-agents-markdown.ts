@@ -1,6 +1,6 @@
 import type { AgentRole } from '../config/config-types.js';
 import { ACTIVE_AGENTS_MD } from '../shared/default-content.js';
-import type { ActiveAgent } from './agent-types.js';
+import type { ActiveAgent, McpClientType } from './agent-types.js';
 
 export function parseActiveAgentsMarkdown(content: string): ActiveAgent[] {
   const agents: ActiveAgent[] = [];
@@ -25,13 +25,25 @@ export function parseActiveAgentsMarkdown(content: string): ActiveAgent[] {
 
     if (id === '' || role === '') continue;
 
-    agents.push({
+    const agent: ActiveAgent = {
       id,
       role: role as AgentRole,
       model,
       pid: parseInt(pidStr, 10),
       since,
-    });
+    };
+
+    const displayName = cells[5] ?? '';
+    const clientType = cells[6] ?? '';
+    const clientSoftware = cells[7] ?? '';
+    const pollIntervalStr = cells[8] ?? '';
+
+    if (displayName !== '') agent.displayName = displayName;
+    if (clientType !== '') agent.clientType = clientType as McpClientType;
+    if (clientSoftware !== '') agent.clientSoftware = clientSoftware;
+    if (pollIntervalStr !== '') agent.pollInterval = parseInt(pollIntervalStr, 10);
+
+    agents.push(agent);
   }
 
   return agents;
@@ -40,7 +52,11 @@ export function parseActiveAgentsMarkdown(content: string): ActiveAgent[] {
 export function buildActiveAgentsMarkdown(agents: ActiveAgent[]): string {
   let content = ACTIVE_AGENTS_MD;
   for (const agent of agents) {
-    content += `| ${agent.id} | ${agent.role} | ${agent.model} | ${String(agent.pid)} | ${agent.since} |\n`;
+    const displayName = agent.displayName ?? '';
+    const clientType = agent.clientType ?? '';
+    const clientSoftware = agent.clientSoftware ?? '';
+    const pollInterval = agent.pollInterval !== undefined ? String(agent.pollInterval) : '';
+    content += `| ${agent.id} | ${agent.role} | ${agent.model} | ${String(agent.pid)} | ${agent.since} | ${displayName} | ${clientType} | ${clientSoftware} | ${pollInterval} |\n`;
   }
   return content;
 }

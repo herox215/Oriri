@@ -69,7 +69,8 @@ async function main(): Promise<void> {
       break;
     }
     case 'mcp-serve': {
-      await mcpServeCommand();
+      const registry = await bootstrapRegistry();
+      await mcpServeCommand(registry);
       break;
     }
     case 'help':
