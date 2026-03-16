@@ -66,6 +66,13 @@ export class AgentRunner {
         break;
       }
 
+      // Heartbeat — update lastSeen on every loop iteration
+      try {
+        await registry.updateLastSeen(agentConfig.id);
+      } catch {
+        // Best-effort
+      }
+
       const taskId = await this.findTask();
 
       if (taskId) {
