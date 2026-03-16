@@ -446,14 +446,14 @@ Voting system for A2A proposals per Spec Section 7.3. Majority voting, silence=c
 
 **Acceptance Criteria:**
 
-- [ ] vote(a2aId, agentId, vote) with YES/NO/ABSTAIN
-- [ ] Majority: >50% of active agents (snapshot at proposal start)
-- [ ] ABSTAIN does not count toward the base
-- [ ] Silence after deadline = YES
-- [ ] 50:50 = not accepted (>50% required)
-- [ ] rules.md change: Unanimous + at least 1 human approval
-- [ ] Meta-rule (unanimous for rules.md) is hardcoded, not changeable
-- [ ] OBSERVER may not vote
+- [x] vote(a2aId, agentId, vote) with YES/NO/ABSTAIN
+- [x] Majority: >50% of active agents (snapshot at proposal start)
+- [x] ABSTAIN does not count toward the base
+- [x] Silence after deadline = YES
+- [x] 50:50 = not accepted (>50% required)
+- [x] rules.md change: Unanimous + at least 1 human approval
+- [x] Meta-rule (unanimous for rules.md) is hardcoded, not changeable
+- [x] OBSERVER may not vote
 
 ---
 

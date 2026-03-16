@@ -150,3 +150,17 @@ export class PermissionDeniedError extends OririError {
     this.name = 'PermissionDeniedError';
   }
 }
+
+export class VoteAlreadyCastError extends OririError {
+  constructor(agentId: string, a2aId: string) {
+    super(`Agent ${agentId} has already voted on A2A task ${a2aId}`, 'VOTE_ALREADY_CAST');
+    this.name = 'VoteAlreadyCastError';
+  }
+}
+
+export class VoteNotAllowedError extends OririError {
+  constructor(reason: string) {
+    super(`Vote not allowed: ${reason}`, 'VOTE_NOT_ALLOWED');
+    this.name = 'VoteNotAllowedError';
+  }
+}

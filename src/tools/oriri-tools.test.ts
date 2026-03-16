@@ -26,6 +26,9 @@ function createMockDeps(): OririToolsDeps {
     storage: {
       readStory: vi.fn().mockResolvedValue('# Story\n\nSome context here.'),
     } as unknown as OririToolsDeps['storage'],
+    consentService: {
+      vote: vi.fn().mockResolvedValue(undefined),
+    } as unknown as OririToolsDeps['consentService'],
     agentId: 'agent-alpha',
     role: 'CODER',
   };
@@ -147,21 +150,55 @@ describe('createOririTools', () => {
     });
   });
 
-  describe('A2A stubs', () => {
-    it('create_a2a should return not implemented error', async () => {
+  describe('create_a2a stub', () => {
+    it('should return not implemented error', async () => {
       const tool = findTool(tools, 'create_a2a');
       const result = await tool.handler({ type: 'agent_silent', description: 'test' });
 
       expect(result.isError).toBe(true);
       expect(result.content).toContain('not yet implemented');
     });
+  });
 
-    it('vote should return not implemented error', async () => {
+  describe('vote', () => {
+    it('should cast vote and return success message', async () => {
       const tool = findTool(tools, 'vote');
-      const result = await tool.handler({ a2a_id: 'a2a-123', decision: 'approve' });
+      const result = await tool.handler({ a2a_id: 'abc12345', vote: 'YES' });
+
+      expect(result.isError).toBeUndefined();
+      expect(result.content).toContain('YES');
+      expect(result.content).toContain('abc12345');
+      expect(deps.consentService.vote).toHaveBeenCalledWith(
+        'abc12345',
+        'agent-alpha',
+        'CODER',
+        'YES',
+        undefined,
+      );
+    });
+
+    it('should pass reason when provided', async () => {
+      const tool = findTool(tools, 'vote');
+      await tool.handler({ a2a_id: 'abc12345', vote: 'NO', reason: 'Bad idea' });
+
+      expect(deps.consentService.vote).toHaveBeenCalledWith(
+        'abc12345',
+        'agent-alpha',
+        'CODER',
+        'NO',
+        'Bad idea',
+      );
+    });
+
+    it('should return error when vote fails', async () => {
+      (deps.consentService.vote as ReturnType<typeof vi.fn>).mockRejectedValue(
+        new Error('Vote already cast'),
+      );
+      const tool = findTool(tools, 'vote');
+      const result = await tool.handler({ a2a_id: 'abc12345', vote: 'YES' });
 
       expect(result.isError).toBe(true);
-      expect(result.content).toContain('not yet implemented');
+      expect(result.content).toContain('Vote already cast');
     });
   });
 });

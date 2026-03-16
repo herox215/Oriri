@@ -8,11 +8,13 @@ import {
   extractAssignedToFromMarkdown,
 } from '../tasks/task-markdown.js';
 import type { ToolDefinition, ToolResult } from './tool-types.js';
+import type { ConsentService, VoteValue } from '../a2a/consent-service.js';
 
 export interface OririToolsDeps {
   taskService: TaskService;
   logService: LogService;
   storage: StorageInterface;
+  consentService: ConsentService;
   agentId: string;
   role: AgentRole;
 }
@@ -26,7 +28,7 @@ function err(content: string): ToolResult {
 }
 
 export function createOririTools(deps: OririToolsDeps): ToolDefinition[] {
-  const { taskService, logService, storage, agentId, role } = deps;
+  const { taskService, logService, storage, consentService, agentId, role } = deps;
 
   return [
     {
@@ -155,20 +157,28 @@ export function createOririTools(deps: OririToolsDeps): ToolDefinition[] {
     },
     {
       name: 'vote',
-      description: 'Vote on an open A2A coordination task. (Not yet implemented — T-012)',
+      description: 'Cast your vote (YES/NO/ABSTAIN) on an open A2A coordination proposal.',
       inputSchema: {
         type: 'object',
         properties: {
-          a2a_id: { type: 'string', description: 'The A2A task ID' },
-          decision: { type: 'string', enum: ['approve', 'reject'], description: 'Your vote' },
-          reason: { type: 'string', description: 'Reason for your vote' },
+          a2a_id: { type: 'string', description: 'The A2A task ID to vote on' },
+          vote: { type: 'string', enum: ['YES', 'NO', 'ABSTAIN'], description: 'Your vote' },
+          reason: { type: 'string', description: 'Optional reason for your vote' },
         },
-        required: ['a2a_id', 'decision'],
+        required: ['a2a_id', 'vote'],
       },
-      handler(): Promise<ToolResult> {
-        return Promise.resolve(
-          err('A2A system is not yet implemented (T-012). Cannot vote on A2A tasks.'),
-        );
+      async handler(input: unknown): Promise<ToolResult> {
+        try {
+          const {
+            a2a_id,
+            vote: voteValue,
+            reason,
+          } = input as { a2a_id: string; vote: VoteValue; reason?: string };
+          await consentService.vote(a2a_id, agentId, role, voteValue, reason);
+          return ok(`Vote ${voteValue} cast on A2A task ${a2a_id}.`);
+        } catch (error: unknown) {
+          return err(error instanceof Error ? error.message : 'Failed to cast vote');
+        }
       },
     },
   ];

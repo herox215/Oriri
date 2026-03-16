@@ -7,6 +7,7 @@ import {
   buildA2AMarkdown,
   extractA2ATargetTaskFromMarkdown,
   replaceA2AStatusInMarkdown,
+  type VoterEntry,
 } from './a2a-markdown.js';
 
 export interface CreateA2AInput {
@@ -15,6 +16,8 @@ export interface CreateA2AInput {
   targetTaskId?: string;
   targetAgentId?: string;
   description: string;
+  voters?: VoterEntry[];
+  deadline?: string;
 }
 
 function formatLogLine(agentId: string, message: string): string {
@@ -30,6 +33,12 @@ export class A2AService {
     const id = generateA2AId(input.createdBy, input.type, existingIds);
     const createdAt = new Date().toISOString();
 
+    const deadline =
+      input.deadline ??
+      (input.voters && input.voters.length > 0
+        ? new Date(new Date(createdAt).getTime() + 24 * 60 * 60 * 1000).toISOString()
+        : undefined);
+
     const markdown = buildA2AMarkdown({
       id,
       type: input.type,
@@ -39,6 +48,8 @@ export class A2AService {
       targetTaskId: input.targetTaskId,
       targetAgentId: input.targetAgentId,
       description: input.description,
+      voters: input.voters,
+      deadline,
     });
 
     await this.storage.writeA2A(id, markdown);

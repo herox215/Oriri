@@ -5,6 +5,11 @@ import {
   extractA2ATypeFromMarkdown,
   extractA2ATargetTaskFromMarkdown,
   replaceA2AStatusInMarkdown,
+  extractVotersFromMarkdown,
+  extractDeadlineFromMarkdown,
+  extractVotesFromMarkdown,
+  appendVoteToMarkdown,
+  replaceVotesSectionInMarkdown,
 } from './a2a-markdown.js';
 
 describe('buildA2AMarkdown', () => {
@@ -94,5 +99,181 @@ describe('replaceA2AStatusInMarkdown', () => {
     const md = '| status | open |';
     const result = replaceA2AStatusInMarkdown(md, 'resolved');
     expect(result).toContain('| status | resolved');
+  });
+});
+
+describe('buildA2AMarkdown with voters and deadline', () => {
+  it('should include voters and deadline rows when provided', () => {
+    const markdown = buildA2AMarkdown({
+      id: 'abc12345',
+      type: 'rules_change',
+      status: 'open',
+      createdBy: 'agent-alpha',
+      createdAt: '2026-03-16T10:00:00.000Z',
+      description: 'Change the voting threshold.',
+      voters: [
+        { id: 'agent-alpha', model: 'claude-3-5-sonnet' },
+        { id: 'agent-human', model: 'human' },
+      ],
+      deadline: '2026-03-17T10:00:00.000Z',
+    });
+
+    expect(markdown).toContain('| voters | agent-alpha:claude-3-5-sonnet,agent-human:human |');
+    expect(markdown).toContain('| deadline | 2026-03-17T10:00:00.000Z |');
+  });
+
+  it('should omit voters and deadline rows when not provided', () => {
+    const markdown = buildA2AMarkdown({
+      id: 'abc12345',
+      type: 'agent_silent',
+      status: 'open',
+      createdBy: 'agent-alpha',
+      createdAt: '2026-03-16T10:00:00.000Z',
+      description: 'Silent.',
+    });
+
+    expect(markdown).not.toContain('| voters |');
+    expect(markdown).not.toContain('| deadline |');
+  });
+
+  it('should always include empty Votes section', () => {
+    const markdown = buildA2AMarkdown({
+      id: 'abc12345',
+      type: 'agent_silent',
+      status: 'open',
+      createdBy: 'agent-alpha',
+      createdAt: '2026-03-16T10:00:00.000Z',
+      description: 'Silent.',
+    });
+
+    expect(markdown).toContain('## Votes');
+    expect(markdown).toContain('| Agent | Vote | Reason | Cast At |');
+  });
+});
+
+describe('extractVotersFromMarkdown', () => {
+  it('should parse voter entries from markdown', () => {
+    const md = '| voters | agent-alpha:claude-3-5-sonnet,agent-human:human |';
+    const voters = extractVotersFromMarkdown(md);
+    expect(voters).toEqual([
+      { id: 'agent-alpha', model: 'claude-3-5-sonnet' },
+      { id: 'agent-human', model: 'human' },
+    ]);
+  });
+
+  it('should return empty array when voters row is absent', () => {
+    expect(extractVotersFromMarkdown('no voters here')).toEqual([]);
+  });
+});
+
+describe('extractDeadlineFromMarkdown', () => {
+  it('should extract ISO deadline', () => {
+    const md = '| deadline | 2026-03-17T10:00:00.000Z |';
+    expect(extractDeadlineFromMarkdown(md)).toBe('2026-03-17T10:00:00.000Z');
+  });
+
+  it('should return null when deadline row is absent', () => {
+    expect(extractDeadlineFromMarkdown('no deadline here')).toBeNull();
+  });
+});
+
+describe('extractVotesFromMarkdown', () => {
+  it('should return empty array when Votes table has no rows', () => {
+    const md = buildA2AMarkdown({
+      id: 'abc12345',
+      type: 'agent_silent',
+      status: 'open',
+      createdBy: 'agent-alpha',
+      createdAt: '2026-03-16T10:00:00.000Z',
+      description: 'Silent.',
+    });
+    expect(extractVotesFromMarkdown(md)).toEqual([]);
+  });
+
+  it('should parse vote rows correctly', () => {
+    const base = buildA2AMarkdown({
+      id: 'abc12345',
+      type: 'agent_silent',
+      status: 'open',
+      createdBy: 'agent-alpha',
+      createdAt: '2026-03-16T10:00:00.000Z',
+      description: 'Silent.',
+    });
+    const withVote = appendVoteToMarkdown(base, {
+      agentId: 'agent-beta',
+      vote: 'YES',
+      reason: 'Looks good',
+      castAt: '2026-03-16T11:00:00.000Z',
+    });
+    const votes = extractVotesFromMarkdown(withVote);
+    expect(votes).toHaveLength(1);
+    expect(votes[0].agentId).toBe('agent-beta');
+    expect(votes[0].vote).toBe('YES');
+    expect(votes[0].reason).toBe('Looks good');
+  });
+
+  it('should handle votes without reason (—)', () => {
+    const base = buildA2AMarkdown({
+      id: 'abc12345',
+      type: 'agent_silent',
+      status: 'open',
+      createdBy: 'agent-alpha',
+      createdAt: '2026-03-16T10:00:00.000Z',
+      description: 'Silent.',
+    });
+    const withVote = appendVoteToMarkdown(base, {
+      agentId: 'agent-beta',
+      vote: 'NO',
+      castAt: '2026-03-16T11:00:00.000Z',
+    });
+    const votes = extractVotesFromMarkdown(withVote);
+    expect(votes[0].reason).toBeUndefined();
+  });
+});
+
+describe('appendVoteToMarkdown', () => {
+  it('should append vote rows and preserve existing ones', () => {
+    const base = buildA2AMarkdown({
+      id: 'abc12345',
+      type: 'agent_silent',
+      status: 'open',
+      createdBy: 'agent-alpha',
+      createdAt: '2026-03-16T10:00:00.000Z',
+      description: 'Silent.',
+    });
+    const after1 = appendVoteToMarkdown(base, {
+      agentId: 'agent-alpha',
+      vote: 'YES',
+      castAt: '2026-03-16T11:00:00.000Z',
+    });
+    const after2 = appendVoteToMarkdown(after1, {
+      agentId: 'agent-beta',
+      vote: 'NO',
+      castAt: '2026-03-16T12:00:00.000Z',
+    });
+    const votes = extractVotesFromMarkdown(after2);
+    expect(votes).toHaveLength(2);
+    expect(votes[0].agentId).toBe('agent-alpha');
+    expect(votes[1].agentId).toBe('agent-beta');
+  });
+});
+
+describe('replaceVotesSectionInMarkdown', () => {
+  it('should replace the Votes section entirely', () => {
+    const base = buildA2AMarkdown({
+      id: 'abc12345',
+      type: 'agent_silent',
+      status: 'open',
+      createdBy: 'agent-alpha',
+      createdAt: '2026-03-16T10:00:00.000Z',
+      description: 'Silent.',
+    });
+    const withVotes = appendVoteToMarkdown(base, {
+      agentId: 'agent-alpha',
+      vote: 'YES',
+      castAt: '2026-03-16T11:00:00.000Z',
+    });
+    const cleared = replaceVotesSectionInMarkdown(withVotes, []);
+    expect(extractVotesFromMarkdown(cleared)).toEqual([]);
   });
 });

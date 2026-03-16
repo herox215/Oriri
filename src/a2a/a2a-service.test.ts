@@ -54,6 +54,35 @@ describe('A2AService', () => {
       expect(content).toContain('Agent alpha has gone silent.');
     });
 
+    it('should write voters and deadline to markdown when provided', async () => {
+      const id = await service.createA2A({
+        type: 'rules_change',
+        createdBy: 'agent-alpha',
+        description: 'Change voting threshold.',
+        voters: [
+          { id: 'agent-alpha', model: 'claude-3-5-sonnet' },
+          { id: 'agent-human', model: 'human' },
+        ],
+        deadline: '2026-03-17T10:00:00.000Z',
+      });
+
+      const content = await service.readA2A(id);
+      expect(content).toContain('| voters | agent-alpha:claude-3-5-sonnet,agent-human:human |');
+      expect(content).toContain('| deadline | 2026-03-17T10:00:00.000Z |');
+    });
+
+    it('should default deadline to 24h from createdAt when voters provided without deadline', async () => {
+      const id = await service.createA2A({
+        type: 'rules_change',
+        createdBy: 'agent-alpha',
+        description: 'Change voting threshold.',
+        voters: [{ id: 'agent-alpha', model: 'claude-3-5-sonnet' }],
+      });
+
+      const content = await service.readA2A(id);
+      expect(content).toContain('| deadline |');
+    });
+
     it('should write a log entry on creation', async () => {
       const id = await service.createA2A({
         type: 'story_archive',
