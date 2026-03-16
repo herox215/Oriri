@@ -614,13 +614,13 @@ npx oriri watch
 
 **Acceptance Criteria:**
 
-- [ ] `npx oriri watch` starts file watcher in the background
-- [ ] Uses `fs.watch` / `chokidar` on `.oriri/` directory
-- [ ] Sends native OS notification via `node-notifier` (macOS, Linux, Windows)
-- [ ] Notifies on: needs_human, H2A response, open consent, agent_silent
-- [ ] Configurable which events trigger notifications
-- [ ] Runs resource-efficiently (no polling, only file events)
-- [ ] `npx oriri watch --stop` stops the watcher
+- [x] `npx oriri watch` starts file watcher in the background
+- [x] Uses `fs.watch` / `chokidar` on `.oriri/` directory
+- [x] Sends native OS notification via `node-notifier` (macOS, Linux, Windows)
+- [x] Notifies on: needs_human, H2A response, open consent, agent_silent
+- [x] Configurable which events trigger notifications
+- [x] Runs resource-efficiently (no polling, only file events)
+- [x] `npx oriri watch --stop` stops the watcher
 
 ---
 

@@ -15,6 +15,7 @@ import { agentListCommand } from './agent-list.js';
 import { agentStartCommand } from './agent-start.js';
 import { agentStopCommand } from './agent-stop.js';
 import { mcpServeCommand } from './mcp-serve.js';
+import { watchCommand } from './watch.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -41,6 +42,7 @@ function printHelp(): void {
   console.log('  agent-list        Show all registered agents');
   console.log('  agent-stop        Stop an agent or all agents');
   console.log('  mcp-serve         Start the MCP server (stdio transport)');
+  console.log('  watch             Start the notification watcher');
   console.log('  help              Show this help message');
   console.log('');
   console.log('Run "oriri <command> --help" for more information about a command.');
@@ -88,6 +90,12 @@ async function main(): Promise<void> {
       const a2aService = new A2AService(storage);
       const deadlockDetector = new DeadlockDetector({ storage, taskService, logService });
       await mcpServeCommand(registry, storyService, taskService, logService, consentService, roleService, a2aService, deadlockDetector, storage);
+      break;
+    }
+    case 'watch': {
+      const basePath = join(process.cwd(), '.oriri');
+      const stop = args.includes('--stop');
+      watchCommand(basePath, { stop });
       break;
     }
     case 'help':

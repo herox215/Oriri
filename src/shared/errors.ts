@@ -164,3 +164,10 @@ export class VoteNotAllowedError extends OririError {
     this.name = 'VoteNotAllowedError';
   }
 }
+
+export class WatcherError extends OririError {
+  constructor(message: string) {
+    super(message, 'WATCHER_ERROR');
+    this.name = 'WatcherError';
+  }
+}
