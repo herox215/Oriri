@@ -100,7 +100,7 @@ const ROLE_PERMISSIONS: Record<AgentRole, RolePermissions> = {
       claimableTypes: ['feature', 'bug', 'chore', 'escalation'],
       claimableStatuses: ['open'],
       canRead: true,
-      canCreate: false,
+      canCreate: true,
     },
     a2a: { canCreate: false, canClaim: false, canRead: true },
     story: { canRead: true, canWrite: false },
