@@ -513,9 +513,9 @@ Base tools that all MCP clients can use (Spec Section 6.3 "All Clients").
 
 **Acceptance Criteria:**
 
-- [ ] All 8 tools implemented and callable via MCP
-- [ ] Role check on every tool call
-- [ ] Error handling for invalid IDs, missing permissions
+- [x] All 8 tools implemented and callable via MCP
+- [x] Role check on every tool call
+- [x] Error handling for invalid IDs, missing permissions
 
 ---
 

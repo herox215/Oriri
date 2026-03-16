@@ -3,6 +3,11 @@ import { OririError } from '../shared/errors.js';
 import { loadConfig } from '../config/config-loader.js';
 import { FilesystemStorage } from '../storage/filesystem-storage.js';
 import { AgentRegistry } from '../agents/agent-registry.js';
+import { RoleService } from '../agents/role-service.js';
+import { LogService } from '../logs/log-service.js';
+import { TaskService } from '../tasks/task-service.js';
+import { StoryService } from '../story/story-service.js';
+import { ConsentService } from '../a2a/consent-service.js';
 import { initCommand } from './init.js';
 import { agentListCommand } from './agent-list.js';
 import { agentStartCommand } from './agent-start.js';
@@ -69,8 +74,16 @@ async function main(): Promise<void> {
       break;
     }
     case 'mcp-serve': {
-      const registry = await bootstrapRegistry();
-      await mcpServeCommand(registry);
+      const basePath = join(process.cwd(), '.oriri');
+      await loadConfig(basePath);
+      const storage = new FilesystemStorage(basePath);
+      const roleService = new RoleService();
+      const logService = new LogService(storage);
+      const taskService = new TaskService(storage, logService, roleService);
+      const storyService = new StoryService(storage, roleService);
+      const consentService = new ConsentService(storage, roleService);
+      const registry = new AgentRegistry(storage);
+      await mcpServeCommand(registry, storyService, taskService, logService, consentService, roleService);
       break;
     }
     case 'help':
