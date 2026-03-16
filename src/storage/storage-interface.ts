@@ -23,6 +23,10 @@ export interface StorageInterface {
   writeA2A(id: string, content: string): Promise<void>;
   listA2A(): Promise<string[]>;
 
+  // A2A Logs (append-only)
+  appendA2ALog(id: string, line: string): Promise<void>;
+  readA2ALog(id: string): Promise<string>;
+
   // Agents
   readActiveAgents(): Promise<string>;
   writeActiveAgents(content: string): Promise<void>;

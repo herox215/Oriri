@@ -22,6 +22,10 @@ export class FilesystemStorage implements StorageInterface {
     return join(this.basePath, 'agent-tasks', `a2a-${id}.md`);
   }
 
+  private a2aLogPath(id: string): string {
+    return join(this.basePath, 'agent-tasks', `a2a-${id}.log.md`);
+  }
+
   private storyPath(): string {
     return join(this.basePath, 'story.md');
   }
@@ -127,6 +131,19 @@ export class FilesystemStorage implements StorageInterface {
 
   async writeA2A(id: string, content: string): Promise<void> {
     await writeFile(this.a2aPath(id), content, 'utf-8');
+  }
+
+  async appendA2ALog(id: string, line: string): Promise<void> {
+    await appendFile(this.a2aLogPath(id), line + '\n', 'utf-8');
+  }
+
+  async readA2ALog(id: string): Promise<string> {
+    try {
+      return await readFile(this.a2aLogPath(id), 'utf-8');
+    } catch (error: unknown) {
+      if (isNodeError(error) && error.code === 'ENOENT') return '';
+      throw error;
+    }
   }
 
   async listA2A(): Promise<string[]> {

@@ -412,11 +412,11 @@ Agent-to-agent coordination tasks per Spec Section 7. Separate file path (`.orir
 
 **Acceptance Criteria:**
 
-- [ ] A2A tasks are stored in `.oriri/agent-tasks/`
-- [ ] All 9 A2A types defined
-- [ ] A2A tasks have their own log files
-- [ ] Accessible as audit trail after completion
-- [ ] Affected tasks receive reference `(via a2a-XXX ✓)`
+- [x] A2A tasks are stored in `.oriri/agent-tasks/`
+- [x] All 9 A2A types defined
+- [x] A2A tasks have their own log files
+- [x] Accessible as audit trail after completion
+- [x] Affected tasks receive reference `(via a2a-XXX ✓)`
 
 ---
 

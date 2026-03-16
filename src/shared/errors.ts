@@ -113,6 +113,20 @@ export class StaleTaskDetectionError extends OririError {
   }
 }
 
+export class A2ANotFoundError extends OririError {
+  constructor(id: string) {
+    super(`A2A task ${id} not found`, 'A2A_NOT_FOUND');
+    this.name = 'A2ANotFoundError';
+  }
+}
+
+export class InvalidA2ATypeError extends OririError {
+  constructor(type: string) {
+    super(`Invalid A2A type: ${type}`, 'INVALID_A2A_TYPE');
+    this.name = 'InvalidA2ATypeError';
+  }
+}
+
 export class StoryArchiveError extends OririError {
   constructor(message: string) {
     super(message, 'STORY_ARCHIVE_FAILED');
