@@ -9,6 +9,7 @@ import {
   STORAGE_MODES,
   type AgentConfig,
   type AgentRole,
+  type BackupConfig,
   type LLMProviderType,
   type OririConfig,
   type StorageMode,
@@ -164,6 +165,21 @@ function validateConfig(raw: unknown): OririConfig {
     result.agents = config['agents'].map((entry: unknown, index: number) =>
       validateAgent(entry, index),
     );
+  }
+
+  if ('backup' in config && config['backup'] !== undefined) {
+    if (config['backup'] === null || typeof config['backup'] !== 'object') {
+      throw new ConfigValidationError('backup must be a mapping');
+    }
+    const backup = config['backup'] as Record<string, unknown>;
+    const backupConfig: BackupConfig = {};
+    if ('auto_snapshot' in backup && backup['auto_snapshot'] !== undefined) {
+      if (typeof backup['auto_snapshot'] !== 'boolean') {
+        throw new ConfigValidationError('backup.auto_snapshot must be a boolean');
+      }
+      backupConfig.auto_snapshot = backup['auto_snapshot'];
+    }
+    result.backup = backupConfig;
   }
 
   return result;

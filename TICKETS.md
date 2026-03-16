@@ -659,9 +659,9 @@ Documentation and optional tooling for hourly backups of the `.oriri/` directory
 
 **Acceptance Criteria:**
 
-- [ ] Documentation for cron-based backup
-- [ ] Optional `oriri backup` command
-- [ ] In server mode: auto-commit snapshot (configurable)
+- [x] Documentation for cron-based backup
+- [x] Optional `oriri backup` command
+- [x] In server mode: auto-commit snapshot (configurable)
 
 ---
 

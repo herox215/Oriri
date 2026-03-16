@@ -29,7 +29,12 @@ export interface AgentConfig {
   capabilities?: string[];
 }
 
+export interface BackupConfig {
+  auto_snapshot?: boolean; // server mode only: commit .oriri/ as a git snapshot after each backup
+}
+
 export interface OririConfig {
   mode: StorageMode;
   agents?: AgentConfig[];
+  backup?: BackupConfig;
 }

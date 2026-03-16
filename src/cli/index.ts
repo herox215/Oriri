@@ -17,6 +17,7 @@ import { agentStartCommand } from './agent-start.js';
 import { agentStopCommand } from './agent-stop.js';
 import { mcpServeCommand } from './mcp-serve.js';
 import { watchCommand } from './watch.js';
+import { backupCommand } from './backup.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -44,6 +45,7 @@ function printHelp(): void {
   console.log('  agent-stop        Stop an agent or all agents');
   console.log('  mcp-serve         Start the MCP server (stdio transport)');
   console.log('  watch             Start the notification watcher');
+  console.log('  backup            Create a timestamped backup of .oriri/');
   console.log('  help              Show this help message');
   console.log('');
   console.log('Run "oriri <command> --help" for more information about a command.');
@@ -98,6 +100,11 @@ async function main(): Promise<void> {
       const basePath = join(process.cwd(), '.oriri');
       const stop = args.includes('--stop');
       watchCommand(basePath, { stop });
+      break;
+    }
+    case 'backup': {
+      const target = getArgValue(args, '--target');
+      await backupCommand({ ...(target !== undefined && { target }) });
       break;
     }
     case 'help':

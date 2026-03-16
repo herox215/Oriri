@@ -2,6 +2,18 @@
   "name": "oriri",
   "version": "0.1.0",
   "description": "AI-first ticketing system",
+  "license": "MIT",
+  "author": {
+    "name": "Lucas Henze",
+    "url": "https://www.plattco.de"
+  },
+  "homepage": "https://github.com/herox215/Oriri",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/herox215/Oriri.git"
+  },
+  "keywords": ["ai", "ticketing", "mcp", "agents"],
+  "files": ["dist"],
   "type": "module",
   "bin": {
     "oriri": "./dist/index.js"

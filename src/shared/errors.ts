@@ -178,3 +178,10 @@ export class FileRecoveryError extends OririError {
     this.name = 'FileRecoveryError';
   }
 }
+
+export class BackupError extends OririError {
+  constructor(message: string) {
+    super(message, 'BACKUP_FAILED');
+    this.name = 'BackupError';
+  }
+}
