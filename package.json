@@ -52,6 +52,7 @@
     "@anthropic-ai/sdk": "^0.78.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "ink": "^6.8.0",
+    "ink-text-input": "^6.0.0",
     "node-notifier": "^10.0.1",
     "react": "^19.2.4",
     "yaml": "^2.8.2"

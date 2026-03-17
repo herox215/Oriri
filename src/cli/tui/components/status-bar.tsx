@@ -17,11 +17,12 @@ export function StatusBar({ activePanel, modalOpen }: StatusBarProps): ReactElem
   }
 
   const agentHints = activePanel === 'agents' ? '  s:stop agent' : '';
+  const taskHints = activePanel === 'tasks' ? '  Enter:respond' : '';
 
   return (
     <Box paddingX={1}>
       <Text dimColor>
-        Tab:panel  ↑↓:select  a:start agent{agentHints}  q:quit
+        Tab:panel  ↑↓:select  a:start agent{agentHints}{taskHints}  q:quit
       </Text>
     </Box>
   );

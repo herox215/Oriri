@@ -3,6 +3,7 @@ import { Box, useInput, useApp } from 'ink';
 import type { ReactElement } from 'react';
 import type { AgentRegistry } from '../../agents/agent-registry.js';
 import type { TaskService } from '../../tasks/task-service.js';
+import type { LogService } from '../../logs/log-service.js';
 import type { OririConfig, ProviderConfig } from '../../config/config-types.js';
 import type { Panel } from './types.js';
 import { useAgents } from './hooks/use-agents.js';
@@ -11,16 +12,18 @@ import { AgentPanel } from './components/agent-panel.js';
 import { TaskPanel } from './components/task-panel.js';
 import { StatusBar } from './components/status-bar.js';
 import { AgentStartModal } from './components/agent-start-modal.js';
+import { HumanInputModal } from './components/human-input-modal.js';
 import { spawnAgent, stopAgent } from './tui-process.js';
 
 interface AppProps {
   registry: AgentRegistry;
   taskService: TaskService;
+  logService: LogService;
   config: OririConfig;
   projectRoot: string;
 }
 
-export function App({ registry, taskService, config, projectRoot }: AppProps): ReactElement {
+export function App({ registry, taskService, logService, config, projectRoot }: AppProps): ReactElement {
   const { exit } = useApp();
 
   const agents = useAgents(registry);
@@ -32,6 +35,8 @@ export function App({ registry, taskService, config, projectRoot }: AppProps): R
   const [taskCursor, setTaskCursor] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalCursor, setModalCursor] = useState(0);
+  const [humanModalTask, setHumanModalTask] = useState<{ id: string; title: string } | null>(null);
+  const [humanModalLog, setHumanModalLog] = useState('');
 
   const handleStopAgent = useCallback(async () => {
     if (agentCursor >= agents.length) return;
@@ -51,7 +56,37 @@ export function App({ registry, taskService, config, projectRoot }: AppProps): R
     [projectRoot],
   );
 
+  const handleOpenHumanModal = useCallback(async () => {
+    const task = tasks[taskCursor];
+    if (!task || task.status !== 'needs_human') return;
+    try {
+      const log = await logService.getLog(task.id);
+      const lines = log.split('\n').filter((l) => l.trim());
+      const tail = lines.slice(-5).join('\n');
+      setHumanModalLog(tail);
+      setHumanModalTask({ id: task.id, title: task.title });
+    } catch {
+      setHumanModalLog('');
+      setHumanModalTask({ id: task.id, title: task.title });
+    }
+  }, [tasks, taskCursor, logService]);
+
+  const handleHumanSubmit = useCallback(
+    async (text: string) => {
+      if (!humanModalTask) return;
+      await taskService.handleHumanInput(humanModalTask.id, text);
+      setHumanModalTask(null);
+      setHumanModalLog('');
+    },
+    [humanModalTask, taskService],
+  );
+
   useInput((input, key) => {
+    if (humanModalTask) {
+      // HumanInputModal handles its own input via TextInput + useInput
+      return;
+    }
+
     if (modalOpen) {
       if (key.upArrow) {
         setModalCursor((prev) => Math.max(0, prev - 1));
@@ -97,6 +132,11 @@ export function App({ registry, taskService, config, projectRoot }: AppProps): R
       return;
     }
 
+    if (key.return && activePanel === 'tasks') {
+      void handleOpenHumanModal();
+      return;
+    }
+
     if (input === 'a') {
       setModalOpen(true);
       setModalCursor(0);
@@ -119,7 +159,19 @@ export function App({ registry, taskService, config, projectRoot }: AppProps): R
           selectedIndex={modalCursor}
         />
       )}
-      <StatusBar activePanel={activePanel} modalOpen={modalOpen} />
+      {humanModalTask && (
+        <HumanInputModal
+          taskId={humanModalTask.id}
+          taskTitle={humanModalTask.title}
+          logEntries={humanModalLog}
+          onSubmit={(text) => void handleHumanSubmit(text)}
+          onCancel={() => {
+            setHumanModalTask(null);
+            setHumanModalLog('');
+          }}
+        />
+      )}
+      <StatusBar activePanel={activePanel} modalOpen={modalOpen || humanModalTask !== null} />
     </Box>
   );
 }

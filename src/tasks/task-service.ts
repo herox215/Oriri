@@ -8,7 +8,9 @@ import type { CreateTaskInput, TaskStatus } from './task-types.js';
 import { generateUniqueTaskId } from './task-id.js';
 import {
   buildTaskMarkdown,
+  clearAssignedToInMarkdown,
   extractAssignedToFromMarkdown,
+  extractContextBundleFromMarkdown,
   extractStatusFromMarkdown,
   extractTypeFromMarkdown,
   replaceAssignedToInMarkdown,
@@ -128,6 +130,21 @@ export class TaskService {
 
     await this.storage.writeTask(id, updated);
     await this.logService.appendLog(id, agentId, 'refined task: draft → open');
+  }
+
+  async handleHumanInput(id: string, text: string): Promise<void> {
+    const markdown = await this.readTask(id);
+    const existingContext = extractContextBundleFromMarkdown(markdown);
+    const appendedContext = existingContext
+      ? `${existingContext}\n\n### Human Input\n\n${text}`
+      : `### Human Input\n\n${text}`;
+
+    let updated = replaceContextBundleInMarkdown(markdown, appendedContext);
+    updated = replaceStatusInMarkdown(updated, 'open');
+    updated = clearAssignedToInMarkdown(updated);
+
+    await this.storage.writeTask(id, updated);
+    await this.logService.appendLog(id, 'human', `human input: ${text}`);
   }
 
   async updateStatus(id: string, newStatus: TaskStatus, agentId: string): Promise<void> {

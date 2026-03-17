@@ -20,7 +20,7 @@ export async function tuiCommand(options?: { cwd?: string }): Promise<void> {
   const taskService = new TaskService(storage, logService, roleService);
 
   const { waitUntilExit } = render(
-    createElement(App, { registry, taskService, config, projectRoot }),
+    createElement(App, { registry, taskService, logService, config, projectRoot }),
   );
   await waitUntilExit();
 }

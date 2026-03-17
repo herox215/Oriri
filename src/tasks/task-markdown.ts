@@ -95,6 +95,11 @@ export function replaceDependenciesInMarkdown(markdown: string, dependencies: st
   );
 }
 
+export function extractContextBundleFromMarkdown(markdown: string): string {
+  const match = /## Context Bundle\n\n([\s\S]*?)(?=\n##|$)/.exec(markdown);
+  return match?.[1]?.trim() ?? '';
+}
+
 export function extractDependenciesFromMarkdown(markdown: string): string[] {
   const section = /## Dependencies\n+([\s\S]*?)(?:\n##|$)/.exec(markdown);
   if (!section?.[1]) return [];
