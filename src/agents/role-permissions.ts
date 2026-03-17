@@ -46,6 +46,18 @@ const ROLE_PERMISSIONS: Record<AgentRole, RolePermissions> = {
     story: { canRead: true, canWrite: true },
     canVote: false,
   },
+
+  SAGENT: {
+    tasks: {
+      claimableTypes: [],
+      claimableStatuses: [],
+      canRead: true,
+      canCreate: true,
+    },
+    a2a: { canCreate: true, canClaim: true, canRead: true },
+    story: { canRead: true, canWrite: true },
+    canVote: true,
+  },
 };
 
 export function getPermissionsForRole(role: AgentRole): RolePermissions {

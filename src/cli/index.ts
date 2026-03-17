@@ -69,7 +69,8 @@ async function main(): Promise<void> {
         process.exitCode = 1;
         break;
       }
-      await agentStartCommand({ providerName: provider });
+      const role = getArgValue(args, '--role') as import('../config/config-types.js').AgentRole | undefined;
+      await agentStartCommand({ providerName: provider, ...(role !== undefined && { role }) });
       break;
     }
     case 'agent-list': {

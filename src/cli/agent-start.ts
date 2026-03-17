@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 
 import { loadConfig } from '../config/config-loader.js';
-import type { RuntimeAgentConfig } from '../config/config-types.js';
+import type { AgentRole, RuntimeAgentConfig } from '../config/config-types.js';
 import { FilesystemStorage } from '../storage/filesystem-storage.js';
 import { LogService } from '../logs/log-service.js';
 import { RoleService } from '../agents/role-service.js';
@@ -21,6 +21,7 @@ import type { LLMProviderType } from '../config/config-types.js';
 
 export interface AgentStartOptions {
   providerName: string;
+  role?: AgentRole;
   cwd?: string;
 }
 
@@ -40,7 +41,7 @@ export async function agentStartCommand(options: AgentStartOptions): Promise<voi
     id: agentId,
     display_name: providerConfig.name,
     model: providerConfig.model,
-    role: 'AGENT',
+    role: options.role ?? 'AGENT',
     provider: providerConfig.name as LLMProviderType,
     api_key: providerConfig.key,
   };

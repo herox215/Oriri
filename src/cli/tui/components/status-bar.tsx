@@ -5,13 +5,15 @@ import type { Panel } from '../types.js';
 interface StatusBarProps {
   activePanel: Panel;
   modalOpen: boolean;
+  modalStep?: 'provider' | 'role';
 }
 
-export function StatusBar({ activePanel, modalOpen }: StatusBarProps): ReactElement {
+export function StatusBar({ activePanel, modalOpen, modalStep }: StatusBarProps): ReactElement {
   if (modalOpen) {
+    const escLabel = modalStep === 'role' ? 'Esc:back' : 'Esc:cancel';
     return (
       <Box paddingX={1}>
-        <Text dimColor>↑↓:select  Enter:confirm  Esc:cancel</Text>
+        <Text dimColor>↑↓:select  Enter:confirm  {escLabel}</Text>
       </Box>
     );
   }

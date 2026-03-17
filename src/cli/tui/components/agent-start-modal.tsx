@@ -1,16 +1,20 @@
 import { Box, Text } from 'ink';
 import type { ReactElement } from 'react';
-import type { ProviderConfig } from '../../../config/config-types.js';
+import { AGENT_ROLES, type ProviderConfig } from '../../../config/config-types.js';
 
 interface AgentStartModalProps {
   providers: ProviderConfig[];
   selectedIndex: number;
+  step: 'provider' | 'role';
 }
 
 export function AgentStartModal({
   providers,
   selectedIndex,
+  step,
 }: AgentStartModalProps): ReactElement {
+  const title = step === 'provider' ? 'Select Provider' : 'Select Role';
+
   return (
     <Box
       flexDirection="column"
@@ -20,19 +24,33 @@ export function AgentStartModal({
       marginX={2}
     >
       <Text bold color="green">
-        Start Agent
+        {title}
       </Text>
-      {providers.length === 0 ? (
-        <Text dimColor>No providers found in config.yaml</Text>
+      {step === 'provider' ? (
+        providers.length === 0 ? (
+          <Text dimColor>No providers found in config.yaml</Text>
+        ) : (
+          <Box flexDirection="column">
+            {providers.map((provider, i) => {
+              const isSelected = i === selectedIndex;
+              return (
+                <Text key={provider.name} inverse={isSelected}>
+                  {isSelected ? '> ' : '  '}
+                  {provider.name.padEnd(16)}
+                  {provider.model}
+                </Text>
+              );
+            })}
+          </Box>
+        )
       ) : (
         <Box flexDirection="column">
-          {providers.map((provider, i) => {
+          {AGENT_ROLES.map((role, i) => {
             const isSelected = i === selectedIndex;
             return (
-              <Text key={provider.name} inverse={isSelected}>
+              <Text key={role} inverse={isSelected}>
                 {isSelected ? '> ' : '  '}
-                {provider.name.padEnd(16)}
-                {provider.model}
+                {role}
               </Text>
             );
           })}

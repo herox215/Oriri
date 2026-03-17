@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 import type { AgentRegistry } from '../../agents/agent-registry.js';
 import type { TaskService } from '../../tasks/task-service.js';
 import type { LogService } from '../../logs/log-service.js';
-import type { OririConfig, ProviderConfig } from '../../config/config-types.js';
+import { AGENT_ROLES, type AgentRole, type OririConfig, type ProviderConfig } from '../../config/config-types.js';
 import type { Panel } from './types.js';
 import { useAgents } from './hooks/use-agents.js';
 import { useTasks } from './hooks/use-tasks.js';
@@ -34,7 +34,9 @@ export function App({ registry, taskService, logService, config, projectRoot }: 
   const [agentCursor, setAgentCursor] = useState(0);
   const [taskCursor, setTaskCursor] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalStep, setModalStep] = useState<'provider' | 'role'>('provider');
   const [modalCursor, setModalCursor] = useState(0);
+  const [selectedProvider, setSelectedProvider] = useState<ProviderConfig | null>(null);
   const [humanModalTask, setHumanModalTask] = useState<{ id: string; title: string } | null>(null);
   const [humanModalLog, setHumanModalLog] = useState('');
 
@@ -50,8 +52,8 @@ export function App({ registry, taskService, logService, config, projectRoot }: 
   }, [agents, agentCursor, registry]);
 
   const handleStartAgent = useCallback(
-    (provider: ProviderConfig) => {
-      spawnAgent(provider.name, projectRoot);
+    (provider: ProviderConfig, role: AgentRole) => {
+      spawnAgent(provider.name, role, projectRoot);
     },
     [projectRoot],
   );
@@ -88,18 +90,36 @@ export function App({ registry, taskService, logService, config, projectRoot }: 
     }
 
     if (modalOpen) {
+      const listLength = modalStep === 'provider' ? providers.length : AGENT_ROLES.length;
       if (key.upArrow) {
         setModalCursor((prev) => Math.max(0, prev - 1));
       } else if (key.downArrow) {
-        setModalCursor((prev) => Math.min(providers.length - 1, prev + 1));
+        setModalCursor((prev) => Math.min(listLength - 1, prev + 1));
       } else if (key.return) {
-        const selected = providers[modalCursor];
-        if (selected) {
-          handleStartAgent(selected);
+        if (modalStep === 'provider') {
+          const selected = providers[modalCursor];
+          if (selected) {
+            setSelectedProvider(selected);
+            setModalStep('role');
+            setModalCursor(0);
+          }
+        } else {
+          const role = AGENT_ROLES[modalCursor];
+          if (selectedProvider && role) {
+            handleStartAgent(selectedProvider, role);
+          }
+          setModalOpen(false);
+          setModalStep('provider');
+          setSelectedProvider(null);
         }
-        setModalOpen(false);
       } else if (key.escape) {
-        setModalOpen(false);
+        if (modalStep === 'role') {
+          setModalStep('provider');
+          setModalCursor(0);
+          setSelectedProvider(null);
+        } else {
+          setModalOpen(false);
+        }
       }
       return;
     }
@@ -157,6 +177,7 @@ export function App({ registry, taskService, logService, config, projectRoot }: 
         <AgentStartModal
           providers={providers}
           selectedIndex={modalCursor}
+          step={modalStep}
         />
       )}
       {humanModalTask && (
@@ -171,7 +192,7 @@ export function App({ registry, taskService, logService, config, projectRoot }: 
           }}
         />
       )}
-      <StatusBar activePanel={activePanel} modalOpen={modalOpen || humanModalTask !== null} />
+      <StatusBar activePanel={activePanel} modalOpen={modalOpen || humanModalTask !== null} modalStep={modalOpen ? modalStep : undefined} />
     </Box>
   );
 }
