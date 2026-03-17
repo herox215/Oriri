@@ -96,6 +96,61 @@ describe('createExecuteH2ATool', () => {
     expect(taskMap['T-H2A']).toContain('| status | done');
   });
 
+  it('executes action on confirmed after conflict resolution with human input', async () => {
+    // Simulate conflict flagged + human confirmed via TUI
+    const h2aTaskWithHumanInput = buildTaskMarkdown({
+      id: 'T-H2A',
+      title: 'Delete T-001',
+      type: 'h2a',
+      status: 'executing',
+      assignedTo: 'agent-1',
+      createdBy: 'cli',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      contextBundle: h2aContextBundle + '\n\n### Human Input\n\nConfirmed, please delete.',
+    });
+
+    const taskMap = { 'T-H2A': h2aTaskWithHumanInput, 'T-001': targetTask };
+    const storage = makeStorage(taskMap);
+    const roleService = new RoleService();
+    const logService = new LogService(storage);
+    const taskService = new TaskService(storage, logService, roleService);
+
+    const { handler } = createExecuteH2ATool(taskService, logService);
+    const result = await handler({
+      task_id: 'T-H2A',
+      client_id: 'agent-1',
+      validation_result: 'confirmed',
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse((result.content[0] as { text: string }).text);
+    expect(data.ok).toBe(true);
+    expect(data.action).toBe('delete_task');
+    expect(data.target_id).toBe('T-001');
+
+    // Target task deleted
+    expect(storage.deleteTask).toHaveBeenCalledWith('T-001');
+
+    // H2A task status set to done
+    expect(taskMap['T-H2A']).toContain('| status | done');
+  });
+
+  it('throws InvalidH2AActionError on confirmed without prior human input', async () => {
+    const taskMap = { 'T-H2A': h2aTask, 'T-001': targetTask };
+    const storage = makeStorage(taskMap);
+    const roleService = new RoleService();
+    const logService = new LogService(storage);
+    const taskService = new TaskService(storage, logService, roleService);
+
+    const { handler } = createExecuteH2ATool(taskService, logService);
+    await expect(
+      handler({ task_id: 'T-H2A', client_id: 'agent-1', validation_result: 'confirmed' }),
+    ).rejects.toThrow(InvalidH2AActionError);
+
+    // Target task NOT deleted
+    expect(storage.deleteTask).not.toHaveBeenCalled();
+  });
+
   it('flags conflict and sets needs_human', async () => {
     const taskMap = { 'T-H2A': h2aTask, 'T-001': targetTask };
     const storage = makeStorage(taskMap);

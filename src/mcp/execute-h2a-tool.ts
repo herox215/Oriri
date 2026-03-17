@@ -15,7 +15,7 @@ export function createExecuteH2ATool(
   const definition: Tool = {
     name: 'execute_h2a',
     description:
-      'Validate and execute an H2A (Human-to-Agent) command task. Read the H2A task first, validate it, then either execute or flag a conflict.',
+      'Validate and execute an H2A (Human-to-Agent) command task. "valid" executes immediately. "conflict" flags an issue and requires human confirmation via TUI — then re-call with "confirmed" to execute after human input.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -26,8 +26,9 @@ export function createExecuteH2ATool(
         },
         validation_result: {
           type: 'string',
-          enum: ['valid', 'conflict'],
-          description: 'Whether the H2A command is safe to execute or has a conflict.',
+          enum: ['valid', 'conflict', 'confirmed'],
+          description:
+            '"valid" = validated and safe, execute immediately. "conflict" = flag an issue, needs human input. "confirmed" = human has confirmed via TUI after conflict, execute now.',
         },
         conflict_description: {
           type: 'string',
@@ -68,7 +69,38 @@ export function createExecuteH2ATool(
       };
     }
 
-    // valid — execute the action (action already validated by parseH2AContextBundle)
+    if (validationResult === 'confirmed') {
+      // Phase 2: Human has confirmed via TUI — verify ### Human Input exists
+      if (!taskMarkdown.includes('### Human Input')) {
+        throw new InvalidH2AActionError(
+          'Cannot execute confirmed H2A without human input. The task must go through TUI confirmation first.',
+        );
+      }
+
+      await executeH2AAction(taskService, payload);
+      await logService.appendLog(
+        taskId,
+        clientId,
+        `h2a executed: ${payload.action} on ${payload.targetId}`,
+      );
+      await taskService.updateStatus(taskId, 'done', clientId);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              ok: true,
+              action: payload.action,
+              target_id: payload.targetId,
+              status: 'done',
+            }),
+          },
+        ],
+      };
+    }
+
+    // valid — agent is confident, execute immediately
     await executeH2AAction(taskService, payload);
     await logService.appendLog(
       taskId,
