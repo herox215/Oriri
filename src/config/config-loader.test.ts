@@ -54,7 +54,7 @@ agents:
   - id: agent-alpha
     display_name: Alpha
     model: claude-sonnet-4-6
-    role: CODER
+    role: AGENT
     api_key: sk-test-123
     capabilities:
       - typescript
@@ -62,7 +62,7 @@ agents:
   - id: agent-beta
     display_name: Beta
     model: claude-haiku-4-5
-    role: REVIEWER
+    role: AGENT
 `);
       const config = await loadConfig(basePath);
       expect(config.mode).toBe('local');
@@ -75,13 +75,13 @@ agents:
       expect(alpha?.id).toBe('agent-alpha');
       expect(alpha?.display_name).toBe('Alpha');
       expect(alpha?.model).toBe('claude-sonnet-4-6');
-      expect(alpha?.role).toBe('CODER');
+      expect(alpha?.role).toBe('AGENT');
       expect(alpha?.api_key).toBe('sk-test-123');
       expect(alpha?.capabilities).toEqual(['typescript', 'testing']);
 
       const beta = agents?.[1];
       expect(beta?.id).toBe('agent-beta');
-      expect(beta?.role).toBe('REVIEWER');
+      expect(beta?.role).toBe('AGENT');
       expect(beta?.api_key).toBeUndefined();
       expect(beta?.capabilities).toBeUndefined();
     });
@@ -114,7 +114,7 @@ agents:
   - id: agent-alpha
     display_name: Alpha
     model: claude-sonnet-4-6
-    role: CODER
+    role: AGENT
     api_key: \${${ENV_KEY}}
 `);
       const config = await loadConfig(basePath);
@@ -130,7 +130,7 @@ agents:
   - id: agent-alpha
     display_name: Alpha
     model: \${${ENV_HOST}}:\${${ENV_PORT}}
-    role: CODER
+    role: AGENT
 `);
       const config = await loadConfig(basePath);
       expect(config.agents?.[0]?.model).toBe('localhost:8080');
@@ -143,7 +143,7 @@ agents:
   - id: agent-alpha
     display_name: Alpha
     model: claude-sonnet-4-6
-    role: CODER
+    role: AGENT
     api_key: \${NONEXISTENT_VAR_12345}
 `);
       await expect(loadConfig(basePath)).rejects.toThrow(ConfigValidationError);
@@ -213,7 +213,7 @@ agents:
   - id: agent-alpha
     display_name: Alpha
     model: claude-sonnet-4-6
-    role: CODER
+    role: AGENT
     capabilities:
       - 123
 `);
@@ -221,15 +221,8 @@ agents:
       await expect(loadConfig(basePath)).rejects.toThrow('capabilities must be a list of strings');
     });
 
-    it('should validate all six roles', async () => {
-      for (const role of [
-        'GENERALIST',
-        'CODER',
-        'REVIEWER',
-        'COORDINATOR',
-        'ARCHITECT',
-        'OBSERVER',
-      ]) {
+    it('should validate both roles', async () => {
+      for (const role of ['AGENT', 'MCP_CLIENT']) {
         await writeConfig(`
 mode: local
 agents:
@@ -285,7 +278,7 @@ agents:
   - id: agent-alpha
     display_name: Alpha
     model: claude-sonnet-4-6
-    role: CODER
+    role: AGENT
     extra_field: extra_value
 `);
       const config = await loadConfig(basePath);

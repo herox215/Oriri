@@ -34,7 +34,7 @@ describe('StaleAgentDetector', () => {
 
     it('should skip self', async () => {
       const agents: ActiveAgent[] = [
-        { id: 'self', role: 'CODER', model: 'test', pid: 0, since: '2026-03-15T10:00:00Z' },
+        { id: 'self', role: 'AGENT', model: 'test', pid: 0, since: '2026-03-15T10:00:00Z' },
       ];
       const registry = createMockRegistry(agents);
       const detector = new StaleAgentDetector({ registry });
@@ -95,7 +95,7 @@ describe('StaleAgentDetector', () => {
       const agents: ActiveAgent[] = [
         {
           id: 'agent-alpha',
-          role: 'CODER',
+          role: 'AGENT',
           model: 'test',
           pid: process.pid, // current process — definitely alive
           since: '2026-03-15T10:00:00Z',
@@ -112,7 +112,7 @@ describe('StaleAgentDetector', () => {
       const agents: ActiveAgent[] = [
         {
           id: 'agent-alpha',
-          role: 'CODER',
+          role: 'AGENT',
           model: 'test',
           pid: 999999, // very unlikely to be alive
           since: '2026-03-15T10:00:00Z',

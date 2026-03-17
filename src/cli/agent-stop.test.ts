@@ -32,7 +32,7 @@ describe('agentStopCommand', () => {
   it('should remove a specific agent', async () => {
     await registry.register({
       id: 'agent-alpha',
-      role: 'CODER',
+      role: 'AGENT',
       model: 'claude-sonnet-4-6',
       pid: 48291,
       since: '2026-03-15',
@@ -54,7 +54,7 @@ describe('agentStopCommand', () => {
   it('should clear all agents with --all', async () => {
     await registry.register({
       id: 'agent-alpha',
-      role: 'CODER',
+      role: 'AGENT',
       model: 'claude-sonnet-4-6',
       pid: 48291,
       since: '2026-03-15',

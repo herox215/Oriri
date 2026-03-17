@@ -53,14 +53,14 @@ describe('ConsentService', () => {
   describe('vote()', () => {
     it('should cast YES vote successfully', async () => {
       const id = await createVotableA2A();
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'YES');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'YES');
       const content = await storage.readA2A(id);
       expect(content).toContain('| agent-alpha | YES |');
     });
 
     it('should cast NO vote successfully', async () => {
       const id = await createVotableA2A();
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'NO', 'Disagree');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'NO', 'Disagree');
       const content = await storage.readA2A(id);
       expect(content).toContain('| agent-alpha | NO |');
       expect(content).toContain('Disagree');
@@ -68,14 +68,14 @@ describe('ConsentService', () => {
 
     it('should cast ABSTAIN vote successfully', async () => {
       const id = await createVotableA2A();
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'ABSTAIN');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'ABSTAIN');
       const content = await storage.readA2A(id);
       expect(content).toContain('| agent-alpha | ABSTAIN |');
     });
 
     it('should append log entry on vote', async () => {
       const id = await createVotableA2A();
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'YES');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'YES');
       const log = await storage.readA2ALog(id);
       expect(log).toContain('agent-alpha');
       expect(log).toContain('voted YES');
@@ -83,15 +83,15 @@ describe('ConsentService', () => {
 
     it('should throw VoteAlreadyCastError on second vote by same agent', async () => {
       const id = await createVotableA2A();
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'YES');
-      await expect(consentService.vote(id, 'agent-alpha', 'CODER', 'NO')).rejects.toThrow(
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'YES');
+      await expect(consentService.vote(id, 'agent-alpha', 'AGENT', 'NO')).rejects.toThrow(
         VoteAlreadyCastError,
       );
     });
 
-    it('should throw PermissionDeniedError for OBSERVER role', async () => {
+    it('should throw PermissionDeniedError for MCP_CLIENT role', async () => {
       const id = await createVotableA2A();
-      await expect(consentService.vote(id, 'agent-observer', 'OBSERVER', 'YES')).rejects.toThrow(
+      await expect(consentService.vote(id, 'agent-observer', 'MCP_CLIENT', 'YES')).rejects.toThrow(
         PermissionDeniedError,
       );
     });
@@ -99,13 +99,13 @@ describe('ConsentService', () => {
     it('should throw VoteNotAllowedError on resolved A2A', async () => {
       const id = await createVotableA2A();
       await a2aService.resolveA2A(id, 'agent-alpha');
-      await expect(consentService.vote(id, 'agent-alpha', 'CODER', 'YES')).rejects.toThrow(
+      await expect(consentService.vote(id, 'agent-alpha', 'AGENT', 'YES')).rejects.toThrow(
         VoteNotAllowedError,
       );
     });
 
     it('should throw A2ANotFoundError for missing A2A', async () => {
-      await expect(consentService.vote('nonexist', 'agent-alpha', 'CODER', 'YES')).rejects.toThrow(
+      await expect(consentService.vote('nonexist', 'agent-alpha', 'AGENT', 'YES')).rejects.toThrow(
         A2ANotFoundError,
       );
     });
@@ -126,7 +126,7 @@ describe('ConsentService', () => {
     it('should return pending when deadline not passed and not all voted', async () => {
       const futureDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
       const id = await createVotableA2A({ deadline: futureDeadline });
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'YES');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'YES');
       const result = await consentService.checkConsent(id);
       expect(result.outcome).toBe('pending');
     });
@@ -134,9 +134,9 @@ describe('ConsentService', () => {
     it('should return accepted on explicit majority before deadline', async () => {
       const futureDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
       const id = await createVotableA2A({ deadline: futureDeadline });
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'YES');
-      await consentService.vote(id, 'agent-beta', 'CODER', 'YES');
-      await consentService.vote(id, 'agent-gamma', 'CODER', 'NO');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'YES');
+      await consentService.vote(id, 'agent-beta', 'AGENT', 'YES');
+      await consentService.vote(id, 'agent-gamma', 'AGENT', 'NO');
       const result = await consentService.checkConsent(id);
       expect(result.outcome).toBe('accepted');
       expect(result.yesCount).toBe(2);
@@ -146,9 +146,9 @@ describe('ConsentService', () => {
     it('should return rejected on majority NO', async () => {
       const futureDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
       const id = await createVotableA2A({ deadline: futureDeadline });
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'NO');
-      await consentService.vote(id, 'agent-beta', 'CODER', 'NO');
-      await consentService.vote(id, 'agent-gamma', 'CODER', 'YES');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'NO');
+      await consentService.vote(id, 'agent-beta', 'AGENT', 'NO');
+      await consentService.vote(id, 'agent-gamma', 'AGENT', 'YES');
       const result = await consentService.checkConsent(id);
       expect(result.outcome).toBe('rejected');
     });
@@ -162,8 +162,8 @@ describe('ConsentService', () => {
           { id: 'agent-beta', model: 'claude-3-5-sonnet' },
         ],
       });
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'YES');
-      await consentService.vote(id, 'agent-beta', 'CODER', 'NO');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'YES');
+      await consentService.vote(id, 'agent-beta', 'AGENT', 'NO');
       const result = await consentService.checkConsent(id);
       expect(result.outcome).toBe('rejected');
     });
@@ -180,7 +180,7 @@ describe('ConsentService', () => {
     it('should return accepted on majority after deadline with some explicit YES', async () => {
       const pastDeadline = new Date(Date.now() - 1000).toISOString();
       const id = await createVotableA2A({ deadline: pastDeadline });
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'NO');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'NO');
       // agent-beta and agent-gamma are silent → count as YES
       // 2 YES, 1 NO → accepted
       const result = await consentService.checkConsent(id);
@@ -190,9 +190,9 @@ describe('ConsentService', () => {
     it('should return rejected when ABSTAIN reduces base to make YES minority', async () => {
       const futureDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
       const id = await createVotableA2A({ deadline: futureDeadline });
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'YES');
-      await consentService.vote(id, 'agent-beta', 'CODER', 'NO');
-      await consentService.vote(id, 'agent-gamma', 'CODER', 'ABSTAIN');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'YES');
+      await consentService.vote(id, 'agent-beta', 'AGENT', 'NO');
+      await consentService.vote(id, 'agent-gamma', 'AGENT', 'ABSTAIN');
       // base = 2 (alpha YES, beta NO, gamma excluded), 1/2 = 50% → rejected
       const result = await consentService.checkConsent(id);
       expect(result.outcome).toBe('rejected');
@@ -212,8 +212,8 @@ describe('ConsentService', () => {
         voters: rulesVoters,
         deadline: futureDeadline,
       });
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'YES');
-      await consentService.vote(id, 'agent-human', 'GENERALIST', 'YES');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'YES');
+      await consentService.vote(id, 'agent-human', 'AGENT', 'YES');
       const result = await consentService.checkConsent(id);
       expect(result.outcome).toBe('accepted');
     });
@@ -225,7 +225,7 @@ describe('ConsentService', () => {
         voters: rulesVoters,
         deadline: futureDeadline,
       });
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'YES');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'YES');
       const result = await consentService.checkConsent(id);
       expect(result.outcome).toBe('pending');
     });
@@ -237,8 +237,8 @@ describe('ConsentService', () => {
         voters: rulesVoters,
         deadline: futureDeadline,
       });
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'NO');
-      await consentService.vote(id, 'agent-human', 'GENERALIST', 'YES');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'NO');
+      await consentService.vote(id, 'agent-human', 'AGENT', 'YES');
       const result = await consentService.checkConsent(id);
       expect(result.outcome).toBe('rejected');
     });
@@ -250,8 +250,8 @@ describe('ConsentService', () => {
         voters: rulesVoters,
         deadline: futureDeadline,
       });
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'ABSTAIN');
-      await consentService.vote(id, 'agent-human', 'GENERALIST', 'YES');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'ABSTAIN');
+      await consentService.vote(id, 'agent-human', 'AGENT', 'YES');
       const result = await consentService.checkConsent(id);
       expect(result.outcome).toBe('rejected');
     });
@@ -267,8 +267,8 @@ describe('ConsentService', () => {
         voters: aiOnlyVoters,
         deadline: futureDeadline,
       });
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'YES');
-      await consentService.vote(id, 'agent-beta', 'CODER', 'YES');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'YES');
+      await consentService.vote(id, 'agent-beta', 'AGENT', 'YES');
       const result = await consentService.checkConsent(id);
       expect(result.outcome).toBe('rejected');
       expect(result.detail).toContain('human');
@@ -281,7 +281,7 @@ describe('ConsentService', () => {
         voters: rulesVoters,
         deadline: pastDeadline,
       });
-      await consentService.vote(id, 'agent-alpha', 'CODER', 'YES');
+      await consentService.vote(id, 'agent-alpha', 'AGENT', 'YES');
       // agent-human is silent after deadline → rejected for unanimous rule
       const result = await consentService.checkConsent(id);
       expect(result.outcome).toBe('rejected');

@@ -1,12 +1,4 @@
-export const AGENT_ROLES = [
-  'GENERALIST',
-  'CODER',
-  'REVIEWER',
-  'COORDINATOR',
-  'ARCHITECT',
-  'OBSERVER',
-  'MCP_CLIENT',
-] as const;
+export const AGENT_ROLES = ['AGENT', 'MCP_CLIENT'] as const;
 
 export type AgentRole = (typeof AGENT_ROLES)[number];
 

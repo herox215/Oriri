@@ -52,7 +52,7 @@ describe('createVoteTool', () => {
 
     await registry.register({
       id: 'agent-gen',
-      role: 'GENERALIST',
+      role: 'AGENT',
       model: 'test-model',
       pid: 0,
       since: '2024-01-01T00:00:00.000Z',

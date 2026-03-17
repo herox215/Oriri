@@ -39,7 +39,7 @@ function createMockDeps(): OririToolsDeps {
       resolveA2A: vi.fn().mockResolvedValue(undefined),
     } as unknown as OririToolsDeps['a2aService'],
     agentId: 'agent-alpha',
-    role: 'CODER',
+    role: 'AGENT',
   };
 }
 
@@ -102,7 +102,7 @@ describe('createOririTools', () => {
       const result = await tool.handler({ task_id: 'abc12345' });
 
       expect(result.content).toContain('Successfully claimed');
-      expect(deps.taskService.claimTask).toHaveBeenCalledWith('abc12345', 'agent-alpha', 'CODER');
+      expect(deps.taskService.claimTask).toHaveBeenCalledWith('abc12345', 'agent-alpha', 'AGENT');
     });
 
     it('should return error on failure', async () => {
@@ -262,7 +262,7 @@ describe('createOririTools', () => {
       expect(deps.consentService.vote).toHaveBeenCalledWith(
         'abc12345',
         'agent-alpha',
-        'CODER',
+        'AGENT',
         'YES',
         undefined,
       );
@@ -275,7 +275,7 @@ describe('createOririTools', () => {
       expect(deps.consentService.vote).toHaveBeenCalledWith(
         'abc12345',
         'agent-alpha',
-        'CODER',
+        'AGENT',
         'NO',
         'Bad idea',
       );

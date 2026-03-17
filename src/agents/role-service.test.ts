@@ -2,94 +2,60 @@ import { describe, it, expect } from 'vitest';
 import { RoleService } from './role-service.js';
 import { getPermissionsForRole } from './role-permissions.js';
 import { PermissionDeniedError } from '../shared/errors.js';
-import type { AgentRole } from '../config/config-types.js';
 import { AGENT_ROLES } from '../config/config-types.js';
 
 describe('RoleService', () => {
   const service = new RoleService();
 
   describe('checkCanClaimTask', () => {
-    it('should allow CODER to claim feature/bug/chore with status open', () => {
+    it('should allow AGENT to claim all task types with status open', () => {
       expect(() => {
-        service.checkCanClaimTask('CODER', 'feature', 'open');
+        service.checkCanClaimTask('AGENT', 'feature', 'open');
       }).not.toThrow();
       expect(() => {
-        service.checkCanClaimTask('CODER', 'bug', 'open');
+        service.checkCanClaimTask('AGENT', 'bug', 'open');
       }).not.toThrow();
       expect(() => {
-        service.checkCanClaimTask('CODER', 'chore', 'open');
+        service.checkCanClaimTask('AGENT', 'chore', 'open');
+      }).not.toThrow();
+      expect(() => {
+        service.checkCanClaimTask('AGENT', 'escalation', 'open');
       }).not.toThrow();
     });
 
-    it('should deny CODER from claiming escalation', () => {
+    it('should allow AGENT to claim awaiting_review tasks', () => {
       expect(() => {
-        service.checkCanClaimTask('CODER', 'escalation', 'open');
+        service.checkCanClaimTask('AGENT', 'feature', 'awaiting_review');
+      }).not.toThrow();
+      expect(() => {
+        service.checkCanClaimTask('AGENT', 'bug', 'awaiting_review');
+      }).not.toThrow();
+    });
+
+    it('should allow MCP_CLIENT to claim all task types with status open', () => {
+      expect(() => {
+        service.checkCanClaimTask('MCP_CLIENT', 'feature', 'open');
+      }).not.toThrow();
+      expect(() => {
+        service.checkCanClaimTask('MCP_CLIENT', 'bug', 'open');
+      }).not.toThrow();
+      expect(() => {
+        service.checkCanClaimTask('MCP_CLIENT', 'chore', 'open');
+      }).not.toThrow();
+      expect(() => {
+        service.checkCanClaimTask('MCP_CLIENT', 'escalation', 'open');
+      }).not.toThrow();
+    });
+
+    it('should deny MCP_CLIENT from claiming awaiting_review tasks', () => {
+      expect(() => {
+        service.checkCanClaimTask('MCP_CLIENT', 'feature', 'awaiting_review');
       }).toThrow(PermissionDeniedError);
-    });
-
-    it('should deny CODER from claiming awaiting_review tasks', () => {
-      expect(() => {
-        service.checkCanClaimTask('CODER', 'feature', 'awaiting_review');
-      }).toThrow(PermissionDeniedError);
-    });
-
-    it('should allow REVIEWER to claim only awaiting_review tasks', () => {
-      expect(() => {
-        service.checkCanClaimTask('REVIEWER', 'feature', 'awaiting_review');
-      }).not.toThrow();
-      expect(() => {
-        service.checkCanClaimTask('REVIEWER', 'bug', 'awaiting_review');
-      }).not.toThrow();
-    });
-
-    it('should deny REVIEWER from claiming open tasks', () => {
-      expect(() => {
-        service.checkCanClaimTask('REVIEWER', 'feature', 'open');
-      }).toThrow(PermissionDeniedError);
-    });
-
-    it('should deny COORDINATOR from claiming any task', () => {
-      expect(() => {
-        service.checkCanClaimTask('COORDINATOR', 'feature', 'open');
-      }).toThrow(PermissionDeniedError);
-      expect(() => {
-        service.checkCanClaimTask('COORDINATOR', 'bug', 'awaiting_review');
-      }).toThrow(PermissionDeniedError);
-    });
-
-    it('should deny OBSERVER from claiming any task', () => {
-      expect(() => {
-        service.checkCanClaimTask('OBSERVER', 'feature', 'open');
-      }).toThrow(PermissionDeniedError);
-    });
-
-    it('should allow GENERALIST to claim all task types', () => {
-      expect(() => {
-        service.checkCanClaimTask('GENERALIST', 'feature', 'open');
-      }).not.toThrow();
-      expect(() => {
-        service.checkCanClaimTask('GENERALIST', 'bug', 'open');
-      }).not.toThrow();
-      expect(() => {
-        service.checkCanClaimTask('GENERALIST', 'chore', 'open');
-      }).not.toThrow();
-      expect(() => {
-        service.checkCanClaimTask('GENERALIST', 'escalation', 'open');
-      }).not.toThrow();
-    });
-
-    it('should allow ARCHITECT to claim all task types', () => {
-      expect(() => {
-        service.checkCanClaimTask('ARCHITECT', 'feature', 'open');
-      }).not.toThrow();
-      expect(() => {
-        service.checkCanClaimTask('ARCHITECT', 'escalation', 'open');
-      }).not.toThrow();
     });
 
     it('should include error code PERMISSION_DENIED', () => {
       try {
-        service.checkCanClaimTask('OBSERVER', 'feature', 'open');
+        service.checkCanClaimTask('MCP_CLIENT', 'feature', 'awaiting_review');
       } catch (error) {
         expect(error).toBeInstanceOf(PermissionDeniedError);
         expect((error as PermissionDeniedError).code).toBe('PERMISSION_DENIED');
@@ -98,111 +64,66 @@ describe('RoleService', () => {
   });
 
   describe('checkCanCreateA2A', () => {
-    it('should allow all roles except OBSERVER to create A2A tasks', () => {
-      const rolesWithAccess: AgentRole[] = [
-        'GENERALIST',
-        'CODER',
-        'REVIEWER',
-        'COORDINATOR',
-        'ARCHITECT',
-      ];
-      for (const role of rolesWithAccess) {
-        expect(() => {
-          service.checkCanCreateA2A(role);
-        }).not.toThrow();
-      }
+    it('should allow AGENT to create A2A tasks', () => {
+      expect(() => {
+        service.checkCanCreateA2A('AGENT');
+      }).not.toThrow();
     });
 
-    it('should deny OBSERVER from creating A2A tasks', () => {
+    it('should deny MCP_CLIENT from creating A2A tasks', () => {
       expect(() => {
-        service.checkCanCreateA2A('OBSERVER');
+        service.checkCanCreateA2A('MCP_CLIENT');
       }).toThrow(PermissionDeniedError);
     });
   });
 
   describe('checkCanClaimA2A', () => {
-    it('should allow only COORDINATOR to claim A2A tasks', () => {
+    it('should allow AGENT to claim A2A tasks', () => {
       expect(() => {
-        service.checkCanClaimA2A('COORDINATOR');
+        service.checkCanClaimA2A('AGENT');
       }).not.toThrow();
     });
 
-    it('should deny non-COORDINATOR roles from claiming A2A tasks', () => {
-      const otherRoles: AgentRole[] = ['GENERALIST', 'CODER', 'REVIEWER', 'ARCHITECT', 'OBSERVER'];
-      for (const role of otherRoles) {
-        expect(() => {
-          service.checkCanClaimA2A(role);
-        }).toThrow(PermissionDeniedError);
-      }
+    it('should deny MCP_CLIENT from claiming A2A tasks', () => {
+      expect(() => {
+        service.checkCanClaimA2A('MCP_CLIENT');
+      }).toThrow(PermissionDeniedError);
     });
   });
 
   describe('checkCanVote', () => {
-    it('should allow all roles except OBSERVER to vote', () => {
-      const votingRoles: AgentRole[] = [
-        'GENERALIST',
-        'CODER',
-        'REVIEWER',
-        'COORDINATOR',
-        'ARCHITECT',
-      ];
-      for (const role of votingRoles) {
-        expect(() => {
-          service.checkCanVote(role);
-        }).not.toThrow();
-      }
+    it('should allow AGENT to vote', () => {
+      expect(() => {
+        service.checkCanVote('AGENT');
+      }).not.toThrow();
     });
 
-    it('should deny OBSERVER from voting', () => {
+    it('should deny MCP_CLIENT from voting', () => {
       expect(() => {
-        service.checkCanVote('OBSERVER');
+        service.checkCanVote('MCP_CLIENT');
       }).toThrow(PermissionDeniedError);
     });
   });
 
   describe('checkCanWriteStory', () => {
-    it('should allow all roles except OBSERVER to write story', () => {
-      const writingRoles: AgentRole[] = [
-        'GENERALIST',
-        'CODER',
-        'REVIEWER',
-        'COORDINATOR',
-        'ARCHITECT',
-      ];
-      for (const role of writingRoles) {
-        expect(() => {
-          service.checkCanWriteStory(role);
-        }).not.toThrow();
-      }
-    });
-
-    it('should deny OBSERVER from writing story', () => {
+    it('should allow both AGENT and MCP_CLIENT to write story', () => {
       expect(() => {
-        service.checkCanWriteStory('OBSERVER');
-      }).toThrow(PermissionDeniedError);
+        service.checkCanWriteStory('AGENT');
+      }).not.toThrow();
+      expect(() => {
+        service.checkCanWriteStory('MCP_CLIENT');
+      }).not.toThrow();
     });
   });
 
   describe('checkCanCreateTask', () => {
-    it('should allow all roles except OBSERVER to create tasks', () => {
-      const creatingRoles: AgentRole[] = [
-        'GENERALIST',
-        'CODER',
-        'REVIEWER',
-        'COORDINATOR',
-        'ARCHITECT',
-      ];
-      for (const role of creatingRoles) {
-        expect(() => {
-          service.checkCanCreateTask(role);
-        }).not.toThrow();
-      }
-    });
-
-    it('should deny OBSERVER from creating tasks', () => {
+    it('should allow both AGENT and MCP_CLIENT to create tasks', () => {
       expect(() => {
-        service.checkCanCreateTask('OBSERVER');
-      }).toThrow(PermissionDeniedError);
+        service.checkCanCreateTask('AGENT');
+      }).not.toThrow();
+      expect(() => {
+        service.checkCanCreateTask('MCP_CLIENT');
+      }).not.toThrow();
     });
   });
 });

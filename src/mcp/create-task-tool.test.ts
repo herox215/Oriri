@@ -42,10 +42,10 @@ describe('createCreateTaskTool', () => {
     const taskService = new TaskService(storage, logService, roleService);
     const registry = new AgentRegistry(storage);
 
-    // Register a GENERALIST agent who can create tasks
+    // Register an AGENT who can create tasks
     await registry.register({
       id: 'agent-generalist',
-      role: 'GENERALIST',
+      role: 'AGENT',
       model: 'test-model',
       pid: 0,
       since: '2024-01-01T00:00:00.000Z',

@@ -10,7 +10,7 @@ import {
 
 const sampleAgent: ActiveAgent = {
   id: 'agent-alpha',
-  role: 'CODER',
+  role: 'AGENT',
   model: 'claude-sonnet-4-6',
   pid: 48291,
   since: '2026-03-15',
@@ -18,7 +18,7 @@ const sampleAgent: ActiveAgent = {
 
 const secondAgent: ActiveAgent = {
   id: 'agent-reviewer',
-  role: 'REVIEWER',
+  role: 'AGENT',
   model: 'claude-haiku-4-5',
   pid: 48305,
   since: '2026-03-15',
@@ -31,7 +31,7 @@ describe('parseActiveAgentsMarkdown', () => {
 
   it('should parse a single agent row', () => {
     const content =
-      ACTIVE_AGENTS_MD + '| agent-alpha | CODER | claude-sonnet-4-6 | 48291 | 2026-03-15 |\n';
+      ACTIVE_AGENTS_MD + '| agent-alpha | AGENT | claude-sonnet-4-6 | 48291 | 2026-03-15 |\n';
     const result = parseActiveAgentsMarkdown(content);
     expect(result).toEqual([sampleAgent]);
   });
@@ -39,8 +39,8 @@ describe('parseActiveAgentsMarkdown', () => {
   it('should parse multiple agent rows', () => {
     const content =
       ACTIVE_AGENTS_MD +
-      '| agent-alpha | CODER | claude-sonnet-4-6 | 48291 | 2026-03-15 |\n' +
-      '| agent-reviewer | REVIEWER | claude-haiku-4-5 | 48305 | 2026-03-15 |\n';
+      '| agent-alpha | AGENT | claude-sonnet-4-6 | 48291 | 2026-03-15 |\n' +
+      '| agent-reviewer | AGENT | claude-haiku-4-5 | 48305 | 2026-03-15 |\n';
     const result = parseActiveAgentsMarkdown(content);
     expect(result).toEqual([sampleAgent, secondAgent]);
   });
@@ -48,7 +48,7 @@ describe('parseActiveAgentsMarkdown', () => {
   it('should handle extra whitespace in cells', () => {
     const content =
       ACTIVE_AGENTS_MD +
-      '|  agent-alpha  |  CODER  |  claude-sonnet-4-6  |  48291  |  2026-03-15  |\n';
+      '|  agent-alpha  |  AGENT  |  claude-sonnet-4-6  |  48291  |  2026-03-15  |\n';
     const result = parseActiveAgentsMarkdown(content);
     expect(result).toEqual([sampleAgent]);
   });
@@ -61,7 +61,7 @@ describe('buildActiveAgentsMarkdown', () => {
 
   it('should produce valid table with agents', () => {
     const result = buildActiveAgentsMarkdown([sampleAgent]);
-    expect(result).toContain('| agent-alpha | CODER | claude-sonnet-4-6 | 48291 | 2026-03-15 |');
+    expect(result).toContain('| agent-alpha | AGENT | claude-sonnet-4-6 | 48291 | 2026-03-15 |');
   });
 
   it('should roundtrip parse/build', () => {

@@ -285,7 +285,7 @@ describe('TaskService', () => {
         createdBy: 'agent-alpha',
       });
 
-      await service.claimTask(id, 'agent-beta', 'CODER');
+      await service.claimTask(id, 'agent-beta', 'AGENT');
       const content = await service.readTask(id);
       expect(content).toContain('| status | planning |');
       expect(content).toContain('| assigned_to | agent-beta |');
@@ -298,7 +298,7 @@ describe('TaskService', () => {
         createdBy: 'agent-alpha',
       });
 
-      await service.claimTask(id, 'agent-beta', 'CODER');
+      await service.claimTask(id, 'agent-beta', 'AGENT');
       const log = await storage.readLog(id);
       expect(log).toContain('agent-beta | claimed task, status: open → planning');
     });
@@ -310,50 +310,41 @@ describe('TaskService', () => {
         createdBy: 'agent-alpha',
       });
 
-      await service.claimTask(id, 'agent-beta', 'CODER');
-      await expect(service.claimTask(id, 'agent-gamma', 'CODER')).rejects.toThrow(
+      await service.claimTask(id, 'agent-beta', 'AGENT');
+      await expect(service.claimTask(id, 'agent-gamma', 'AGENT')).rejects.toThrow(
         TaskAlreadyClaimedError,
       );
     });
 
-    it('should throw PermissionDeniedError for OBSERVER role', async () => {
-      const id = await service.createTask({
-        title: 'Observer cannot claim',
-        type: 'chore',
-        createdBy: 'agent-alpha',
-      });
-
-      await expect(service.claimTask(id, 'agent-observer', 'OBSERVER')).rejects.toThrow(
-        PermissionDeniedError,
-      );
-    });
-
-    it('should throw PermissionDeniedError when CODER tries to claim escalation', async () => {
+    it('should allow AGENT to claim escalation tasks', async () => {
       const id = await service.createTask({
         title: 'Escalation task',
         type: 'escalation',
         createdBy: 'agent-alpha',
       });
 
-      await expect(service.claimTask(id, 'agent-coder', 'CODER')).rejects.toThrow(
-        PermissionDeniedError,
-      );
+      await service.claimTask(id, 'agent-coder', 'AGENT');
+      const content = await service.readTask(id);
+      expect(content).toContain('| assigned_to | agent-coder |');
     });
 
-    it('should throw PermissionDeniedError when REVIEWER tries to claim open task', async () => {
+    it('should throw PermissionDeniedError when MCP_CLIENT tries to claim awaiting_review task', async () => {
       const id = await service.createTask({
-        title: 'Open task',
+        title: 'Review task',
         type: 'feature',
         createdBy: 'agent-alpha',
       });
 
-      await expect(service.claimTask(id, 'agent-reviewer', 'REVIEWER')).rejects.toThrow(
+      // Manually set status to awaiting_review without claiming (to avoid TaskAlreadyClaimedError)
+      await service.updateStatus(id, 'awaiting_review', 'agent-alpha');
+
+      await expect(service.claimTask(id, 'mcp-client', 'MCP_CLIENT')).rejects.toThrow(
         PermissionDeniedError,
       );
     });
 
     it('should throw TaskNotFoundError for non-existent task', async () => {
-      await expect(service.claimTask('nonexistent', 'agent-alpha', 'CODER')).rejects.toThrow(
+      await expect(service.claimTask('nonexistent', 'agent-alpha', 'AGENT')).rejects.toThrow(
         TaskNotFoundError,
       );
     });

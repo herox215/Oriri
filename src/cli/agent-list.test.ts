@@ -33,7 +33,7 @@ describe('agentListCommand', () => {
   it('should print agent details when agents are registered', async () => {
     await registry.register({
       id: 'agent-alpha',
-      role: 'CODER',
+      role: 'AGENT',
       model: 'claude-sonnet-4-6',
       pid: 48291,
       since: '2026-03-15',
@@ -43,7 +43,7 @@ describe('agentListCommand', () => {
 
     const output = consoleSpy.mock.calls.map((c) => c[0]).join('\n');
     expect(output).toContain('agent-alpha');
-    expect(output).toContain('CODER');
+    expect(output).toContain('AGENT');
     expect(output).toContain('claude-sonnet-4-6');
   });
 });

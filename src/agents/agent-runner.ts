@@ -512,7 +512,7 @@ export class AgentRunner {
       parts.push(config.system_prompt);
     }
 
-    parts.push(`You are agent "${config.id}" with role COORDINATOR.`);
+    parts.push(`You are agent "${config.id}" with role AGENT.`);
     parts.push('You process agent-to-agent (A2A) coordination tasks.');
     parts.push(`Your capabilities: ${config.capabilities?.join(', ') ?? 'coordination'}`);
 
@@ -564,7 +564,7 @@ export class AgentRunner {
       console.log(`[${agentConfig.id}] Cleaned up stale agent: ${id}`);
     }
 
-    if (agentConfig.role === 'COORDINATOR') {
+    if (agentConfig.role === 'AGENT') {
       const deadlockDetector = new DeadlockDetector({ storage, taskService, logService });
       const deadlockA2AIds = await deadlockDetector.checkDeadlocks(agentConfig.id);
       for (const id of deadlockA2AIds) {

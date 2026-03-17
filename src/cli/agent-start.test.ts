@@ -59,7 +59,7 @@ agents:
   - id: agent-alpha
     display_name: "Alpha"
     model: claude-sonnet-4-6
-    role: CODER
+    role: AGENT
 `,
     );
 
@@ -77,7 +77,7 @@ agents:
   - id: agent-alpha
     display_name: "Alpha"
     model: claude-sonnet-4-6
-    role: CODER
+    role: AGENT
     api_key: test-key-123
 `,
     );

@@ -23,76 +23,16 @@ export interface RolePermissions {
 }
 
 const ROLE_PERMISSIONS: Record<AgentRole, RolePermissions> = {
-  GENERALIST: {
+  AGENT: {
     tasks: {
       claimableTypes: ['feature', 'bug', 'chore', 'escalation'],
-      claimableStatuses: ['open'],
-      canRead: true,
-      canCreate: true,
-    },
-    a2a: { canCreate: true, canClaim: false, canRead: true },
-    story: { canRead: true, canWrite: true },
-    canVote: true,
-  },
-
-  CODER: {
-    tasks: {
-      claimableTypes: ['feature', 'bug', 'chore'],
-      claimableStatuses: ['open'],
-      canRead: true,
-      canCreate: true,
-    },
-    a2a: { canCreate: true, canClaim: false, canRead: true },
-    story: { canRead: true, canWrite: true },
-    canVote: true,
-  },
-
-  REVIEWER: {
-    tasks: {
-      claimableTypes: ['feature', 'bug', 'chore', 'escalation'],
-      claimableStatuses: ['awaiting_review'],
-      canRead: true,
-      canCreate: true,
-    },
-    a2a: { canCreate: true, canClaim: false, canRead: true },
-    story: { canRead: true, canWrite: true },
-    canVote: true,
-  },
-
-  COORDINATOR: {
-    tasks: {
-      claimableTypes: [],
-      claimableStatuses: [],
+      claimableStatuses: ['open', 'awaiting_review'],
       canRead: true,
       canCreate: true,
     },
     a2a: { canCreate: true, canClaim: true, canRead: true },
     story: { canRead: true, canWrite: true },
     canVote: true,
-  },
-
-  ARCHITECT: {
-    tasks: {
-      claimableTypes: ['feature', 'bug', 'chore', 'escalation'],
-      claimableStatuses: ['open'],
-      canRead: true,
-      canCreate: true,
-    },
-    a2a: { canCreate: true, canClaim: false, canRead: true },
-    story: { canRead: true, canWrite: true },
-    canVote: true,
-  },
-
-  OBSERVER: {
-    tasks: {
-      claimableTypes: [],
-      claimableStatuses: [],
-      canRead: true,
-      canCreate: false,
-    },
-    a2a: { canCreate: false, canClaim: false, canRead: true },
-    story: { canRead: true, canWrite: false },
-    canVote: false,
   },
 
   MCP_CLIENT: {

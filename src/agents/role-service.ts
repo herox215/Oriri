@@ -43,7 +43,7 @@ export class RoleService {
       throw new PermissionDeniedError(
         'claim A2A task',
         role,
-        'only COORDINATOR can claim A2A tasks',
+        'only AGENT can claim A2A tasks',
       );
     }
   }

@@ -61,7 +61,7 @@ function createMockDeps(overrides?: Partial<AgentRunnerDeps>): AgentRunnerDeps {
       id: 'agent-alpha',
       display_name: 'Alpha',
       model: 'claude-sonnet-4-6',
-      role: 'CODER' as const,
+      role: 'AGENT' as const,
       api_key: 'test-key',
     },
     shutdownController,
@@ -147,7 +147,7 @@ describe('AgentRunner', () => {
       const runner = new AgentRunner(deps);
       await runner.run();
 
-      expect(deps.taskService.claimTask).toHaveBeenCalledWith('task-001', 'agent-alpha', 'CODER');
+      expect(deps.taskService.claimTask).toHaveBeenCalledWith('task-001', 'agent-alpha', 'AGENT');
       expect(deps.taskService.updateStatus).toHaveBeenCalledWith(
         'task-001',
         'executing',
@@ -267,7 +267,7 @@ describe('AgentRunner', () => {
       } as unknown as AgentRunnerDeps['consentService'];
       deps.agentConfig = {
         ...deps.agentConfig,
-        role: 'COORDINATOR',
+        role: 'AGENT',
       };
 
       (deps.llmProvider.createMessage as ReturnType<typeof vi.fn>).mockResolvedValue(
@@ -280,7 +280,7 @@ describe('AgentRunner', () => {
       expect(deps.llmProvider.createMessage).toHaveBeenCalledTimes(1);
       const callArgs = (deps.llmProvider.createMessage as ReturnType<typeof vi.fn>).mock
         .calls[0] as [{ system: string; messages: { content: string }[] }];
-      expect(callArgs[0].system).toContain('COORDINATOR');
+      expect(callArgs[0].system).toContain('AGENT');
       expect(callArgs[0].messages[0].content).toContain('a2a-001');
     });
 
@@ -308,7 +308,7 @@ describe('AgentRunner', () => {
           detail: '',
         }),
       } as unknown as AgentRunnerDeps['consentService'];
-      deps.agentConfig = { ...deps.agentConfig, role: 'COORDINATOR' };
+      deps.agentConfig = { ...deps.agentConfig, role: 'AGENT' };
 
       (deps.llmProvider.createMessage as ReturnType<typeof vi.fn>).mockResolvedValue(
         makeToolUseResponse('resolve_a2a', { a2a_id: 'a2a-001' }),

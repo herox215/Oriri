@@ -15,7 +15,7 @@ describe('AgentRegistry', () => {
 
   const agent: ActiveAgent = {
     id: 'agent-alpha',
-    role: 'CODER',
+    role: 'AGENT',
     model: 'claude-sonnet-4-6',
     pid: 48291,
     since: '2026-03-15',
@@ -23,7 +23,7 @@ describe('AgentRegistry', () => {
 
   const agent2: ActiveAgent = {
     id: 'agent-reviewer',
-    role: 'REVIEWER',
+    role: 'AGENT',
     model: 'claude-haiku-4-5',
     pid: 48305,
     since: '2026-03-15',

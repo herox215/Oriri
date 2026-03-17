@@ -142,7 +142,7 @@ describe('createGetNextTaskTool', () => {
 
     await registry.register({
       id: 'client-1',
-      role: 'GENERALIST',
+      role: 'AGENT',
       model: 'test',
       pid: 0,
       since: '2024-01-01T00:00:00.000Z',

@@ -179,7 +179,7 @@ describe('FilesystemStorage', () => {
     });
 
     it('should overwrite active agents content', async () => {
-      const newContent = '# Active Agents\n\n| agent-alpha | CODER |';
+      const newContent = '# Active Agents\n\n| agent-alpha | AGENT |';
       await storage.writeActiveAgents(newContent);
       const result = await storage.readActiveAgents();
       expect(result).toBe(newContent);
