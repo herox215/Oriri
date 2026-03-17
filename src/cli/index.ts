@@ -19,6 +19,7 @@ import { mcpServeCommand } from './mcp-serve.js';
 import { watchCommand } from './watch.js';
 import { backupCommand } from './backup.js';
 import { createCommand } from './create.js';
+import { deleteCommand } from './delete.js';
 import { tuiCommand } from './tui.js';
 
 const args = process.argv.slice(2);
@@ -48,6 +49,7 @@ function printHelp(): void {
   console.log('  mcp-serve         Start the MCP server (stdio transport)');
   console.log('  watch             Start the notification watcher');
   console.log('  create <title>    Create a draft task from the CLI');
+  console.log('  delete <id>       Request deletion of a task (creates H2A task)');
   console.log('  tui               Interactive dashboard');
   console.log('  backup            Create a timestamped backup of .oriri/');
   console.log('  help              Show this help message');
@@ -116,6 +118,17 @@ async function main(): Promise<void> {
         break;
       }
       await createCommand(title);
+      break;
+    }
+    case 'delete': {
+      const targetId = args[1];
+      if (!targetId) {
+        console.error('Missing required argument: task ID');
+        console.error('Usage: oriri delete <id>');
+        process.exitCode = 1;
+        break;
+      }
+      await deleteCommand(targetId);
       break;
     }
     case 'tui': {

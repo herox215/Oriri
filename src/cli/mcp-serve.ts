@@ -18,6 +18,7 @@ import {
   createInspectTaskTool,
   createCompleteTaskTool,
   createRefineTaskTool,
+  createExecuteH2ATool,
 } from '../mcp/index.js';
 import type { AgentRegistry } from '../agents/agent-registry.js';
 import type { StoryService } from '../story/story-service.js';
@@ -64,6 +65,7 @@ export async function mcpServeCommand(
     createInspectTaskTool(taskService, logService),
     createCompleteTaskTool(taskService, logService, storyService),
     createRefineTaskTool(taskService),
+    createExecuteH2ATool(taskService, logService),
   ];
 
   for (const { definition, handler } of tools) {

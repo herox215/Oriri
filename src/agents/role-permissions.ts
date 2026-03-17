@@ -25,7 +25,7 @@ export interface RolePermissions {
 const ROLE_PERMISSIONS: Record<AgentRole, RolePermissions> = {
   AGENT: {
     tasks: {
-      claimableTypes: ['feature', 'bug', 'chore', 'escalation'],
+      claimableTypes: ['feature', 'bug', 'chore', 'escalation', 'h2a'],
       claimableStatuses: ['open', 'awaiting_review'],
       canRead: true,
       canCreate: true,
@@ -37,7 +37,7 @@ const ROLE_PERMISSIONS: Record<AgentRole, RolePermissions> = {
 
   MCP_CLIENT: {
     tasks: {
-      claimableTypes: ['feature', 'bug', 'chore', 'escalation'],
+      claimableTypes: ['feature', 'bug', 'chore', 'escalation', 'h2a'],
       claimableStatuses: ['open'],
       canRead: true,
       canCreate: true,
@@ -49,8 +49,8 @@ const ROLE_PERMISSIONS: Record<AgentRole, RolePermissions> = {
 
   SAGENT: {
     tasks: {
-      claimableTypes: [],
-      claimableStatuses: [],
+      claimableTypes: ['h2a'],
+      claimableStatuses: ['open'],
       canRead: true,
       canCreate: true,
     },

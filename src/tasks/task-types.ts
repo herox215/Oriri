@@ -1,4 +1,4 @@
-export type TaskType = 'feature' | 'bug' | 'chore' | 'escalation';
+export type TaskType = 'feature' | 'bug' | 'chore' | 'escalation' | 'h2a';
 
 export type TaskStatus =
   | 'draft'
@@ -11,7 +11,7 @@ export type TaskStatus =
   | 'awaiting_review'
   | 'done';
 
-export const TASK_TYPES: readonly TaskType[] = ['feature', 'bug', 'chore', 'escalation'] as const;
+export const TASK_TYPES: readonly TaskType[] = ['feature', 'bug', 'chore', 'escalation', 'h2a'] as const;
 
 export const TASK_STATUSES: readonly TaskStatus[] = [
   'draft',

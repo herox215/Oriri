@@ -195,3 +195,10 @@ export class BackupError extends OririError {
     this.name = 'BackupError';
   }
 }
+
+export class InvalidH2AActionError extends OririError {
+  constructor(action: string) {
+    super(`Invalid H2A action: ${action}`, 'INVALID_H2A_ACTION');
+    this.name = 'InvalidH2AActionError';
+  }
+}
