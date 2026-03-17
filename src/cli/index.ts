@@ -19,6 +19,7 @@ import { mcpServeCommand } from './mcp-serve.js';
 import { watchCommand } from './watch.js';
 import { backupCommand } from './backup.js';
 import { createCommand } from './create.js';
+import { tuiCommand } from './tui.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -47,6 +48,7 @@ function printHelp(): void {
   console.log('  mcp-serve         Start the MCP server (stdio transport)');
   console.log('  watch             Start the notification watcher');
   console.log('  create <title>    Create a draft task from the CLI');
+  console.log('  tui               Interactive dashboard');
   console.log('  backup            Create a timestamped backup of .oriri/');
   console.log('  help              Show this help message');
   console.log('');
@@ -113,6 +115,10 @@ async function main(): Promise<void> {
         break;
       }
       await createCommand(title);
+      break;
+    }
+    case 'tui': {
+      await tuiCommand();
       break;
     }
     case 'backup': {

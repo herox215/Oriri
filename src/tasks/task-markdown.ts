@@ -48,6 +48,11 @@ export function replaceStatusInMarkdown(markdown: string, newStatus: TaskStatus)
   return markdown.replace(/(\| status \| )\S+/, `$1${newStatus}`);
 }
 
+export function extractTitleFromMarkdown(markdown: string): string | null {
+  const match = /^# (.+)$/m.exec(markdown);
+  return match?.[1] ?? null;
+}
+
 export function extractStatusFromMarkdown(markdown: string): string | null {
   const match = /\| status \| (\S+)/.exec(markdown);
   return match?.[1] ?? null;
