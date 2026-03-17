@@ -202,3 +202,13 @@ export class InvalidH2AActionError extends OririError {
     this.name = 'InvalidH2AActionError';
   }
 }
+
+export class H2ABypassError extends OririError {
+  constructor(taskId: string) {
+    super(
+      `Task ${taskId} is an H2A task and cannot be completed via complete_task. Use execute_h2a instead.`,
+      'H2A_BYPASS_NOT_ALLOWED',
+    );
+    this.name = 'H2ABypassError';
+  }
+}

@@ -4,7 +4,7 @@ import { LogService } from '../logs/log-service.js';
 import { RoleService } from '../agents/role-service.js';
 import { ACTIVE_AGENTS_MD } from '../shared/default-content.js';
 import { buildTaskMarkdown } from '../tasks/task-markdown.js';
-import { PermissionDeniedError } from '../shared/errors.js';
+import { PermissionDeniedError, H2ABypassError } from '../shared/errors.js';
 import { createCompleteTaskTool } from './complete-task-tool.js';
 import type { StorageInterface } from '../storage/storage-interface.js';
 
@@ -105,6 +105,27 @@ describe('createCompleteTaskTool', () => {
 
     expect(result.isError).toBeFalsy();
     expect(taskMap['T-002']).toContain('| status | done');
+  });
+
+  it('throws H2ABypassError when trying to complete an H2A task', async () => {
+    const h2aTask = buildTaskMarkdown({
+      id: 'T-H2A',
+      title: 'Delete something',
+      type: 'h2a',
+      status: 'executing',
+      assignedTo: 'client-abc',
+      createdBy: 'cli',
+      createdAt: '2024-01-01T00:00:00.000Z',
+    });
+    const storage = makeStorage({ 'T-H2A': h2aTask });
+    const roleService = new RoleService();
+    const logService = new LogService(storage);
+    const taskService = new TaskService(storage, logService, roleService);
+
+    const { handler } = createCompleteTaskTool(taskService, logService);
+    await expect(
+      handler({ task_id: 'T-H2A', summary: 'done', client_id: 'client-abc' }),
+    ).rejects.toThrow(H2ABypassError);
   });
 
   it('tool definition has correct name and required fields', () => {
