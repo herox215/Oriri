@@ -43,12 +43,19 @@ export function createRefineTaskTool(
     const context = typeof args.context === 'string' ? args.context : undefined;
     const clientId = typeof args.client_id === 'string' ? args.client_id : 'mcp-anonymous';
 
-    await taskService.refineTask(taskId, clientId, {
+    const { targetStatus } = await taskService.refineTask(taskId, clientId, {
       type,
       contextBundle: context,
     });
 
-    return { content: [{ type: 'text', text: JSON.stringify({ ok: true, task_id: taskId }) }] };
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({ ok: true, task_id: taskId, status: targetStatus }),
+        },
+      ],
+    };
   };
 
   return { definition, handler };

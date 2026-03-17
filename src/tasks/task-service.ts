@@ -111,13 +111,16 @@ export class TaskService {
     id: string,
     agentId: string,
     options?: { type?: TaskType | undefined; contextBundle?: string | undefined },
-  ): Promise<void> {
+  ): Promise<{ targetStatus: TaskStatus }> {
     const markdown = await this.readTask(id);
     const currentStatus = extractStatusFromMarkdown(markdown);
 
     if (currentStatus !== 'draft') {
       throw new TaskNotDraftError(id, currentStatus ?? 'unknown');
     }
+
+    const effectiveType = options?.type ?? extractTypeFromMarkdown(markdown);
+    const targetStatus: TaskStatus = effectiveType === 'escalation' ? 'needs_human' : 'open';
 
     let updated = markdown;
     if (options?.type) {
@@ -126,10 +129,12 @@ export class TaskService {
     if (options?.contextBundle) {
       updated = replaceContextBundleInMarkdown(updated, options.contextBundle);
     }
-    updated = replaceStatusInMarkdown(updated, 'open');
+    updated = replaceStatusInMarkdown(updated, targetStatus);
 
     await this.storage.writeTask(id, updated);
-    await this.logService.appendLog(id, agentId, 'refined task: draft → open');
+    await this.logService.appendLog(id, agentId, `refined task: draft → ${targetStatus}`);
+
+    return { targetStatus };
   }
 
   async handleHumanInput(id: string, text: string): Promise<void> {

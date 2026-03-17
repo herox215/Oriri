@@ -338,8 +338,9 @@ export class AgentRunner {
         content:
           `You are refining draft task ${taskId}.\n\n${taskMarkdown}\n\n` +
           'Analyze this draft. Decide the correct task type (feature, bug, chore, escalation). ' +
+          'Use "escalation" for tasks that are not actionable by an AI agent and need human review. ' +
           'If the task is too large for a single agent, create subtasks using create_task and set dependencies using set_dependencies. ' +
-          'When ready, call refine_task to promote the draft to open status.',
+          'When ready, call refine_task with the correct type.',
       },
     ];
 
@@ -401,11 +402,12 @@ export class AgentRunner {
     parts.push('\n## Refinement Instructions\n');
     parts.push('1. Read the draft task carefully.');
     parts.push('2. Determine the correct task type (feature, bug, chore, escalation).');
-    parts.push('3. If the task is too large for a single agent, break it into subtasks using create_task.');
-    parts.push('4. Set dependencies between subtasks using set_dependencies if needed.');
-    parts.push('5. Use list_tasks to understand what already exists.');
-    parts.push('6. When analysis is complete, call refine_task with the correct type to promote the draft to open.');
-    parts.push('7. Do NOT attempt to implement the task. Your job is only to refine it.');
+    parts.push('3. Use type "escalation" for tasks that are NOT actionable by an AI agent — e.g. human directives, policy statements, questions that require human judgement, or unclear/ambiguous requests. Escalation tasks will be routed to a human for review (status → needs_human).');
+    parts.push('4. If the task is too large for a single agent, break it into subtasks using create_task.');
+    parts.push('5. Set dependencies between subtasks using set_dependencies if needed.');
+    parts.push('6. Use list_tasks to understand what already exists.');
+    parts.push('7. When analysis is complete, call refine_task with the correct type.');
+    parts.push('8. Do NOT attempt to implement the task. Your job is only to refine it.');
 
     return parts.join('\n');
   }
