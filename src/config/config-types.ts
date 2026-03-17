@@ -10,15 +10,19 @@ export const STORAGE_MODES = ['local', 'server', 'hybrid'] as const;
 
 export type StorageMode = (typeof STORAGE_MODES)[number];
 
-export interface AgentConfig {
+export interface ProviderConfig {
+  name: string;
+  model: string;
+  key: string;
+}
+
+export interface RuntimeAgentConfig {
   id: string;
   display_name: string;
   model: string;
   role: AgentRole;
-  provider?: LLMProviderType;
-  api_key?: string;
-  system_prompt?: string;
-  capabilities?: string[];
+  provider: LLMProviderType;
+  api_key: string;
 }
 
 export interface BackupConfig {
@@ -27,6 +31,6 @@ export interface BackupConfig {
 
 export interface OririConfig {
   mode: StorageMode;
-  agents?: AgentConfig[];
+  provider?: ProviderConfig[];
   backup?: BackupConfig;
 }

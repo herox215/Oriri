@@ -95,10 +95,10 @@ export class AgentAlreadyRegisteredError extends OririError {
   }
 }
 
-export class AgentConfigNotFoundError extends OririError {
-  constructor(agentId: string) {
-    super(`Agent config for "${agentId}" not found in config.yaml`, 'AGENT_CONFIG_NOT_FOUND');
-    this.name = 'AgentConfigNotFoundError';
+export class ProviderNotFoundError extends OririError {
+  constructor(providerName: string) {
+    super(`Provider "${providerName}" not found in config.yaml`, 'PROVIDER_NOT_FOUND');
+    this.name = 'ProviderNotFoundError';
   }
 }
 

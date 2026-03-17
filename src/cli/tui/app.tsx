@@ -3,7 +3,7 @@ import { Box, useInput, useApp } from 'ink';
 import type { ReactElement } from 'react';
 import type { AgentRegistry } from '../../agents/agent-registry.js';
 import type { TaskService } from '../../tasks/task-service.js';
-import type { OririConfig, AgentConfig } from '../../config/config-types.js';
+import type { OririConfig, ProviderConfig } from '../../config/config-types.js';
 import type { Panel } from './types.js';
 import { useAgents } from './hooks/use-agents.js';
 import { useTasks } from './hooks/use-tasks.js';
@@ -25,7 +25,7 @@ export function App({ registry, taskService, config, projectRoot }: AppProps): R
 
   const agents = useAgents(registry);
   const tasks = useTasks(taskService);
-  const agentConfigs: AgentConfig[] = config.agents ?? [];
+  const providers: ProviderConfig[] = config.provider ?? [];
 
   const [activePanel, setActivePanel] = useState<Panel>('agents');
   const [agentCursor, setAgentCursor] = useState(0);
@@ -33,10 +33,8 @@ export function App({ registry, taskService, config, projectRoot }: AppProps): R
   const [modalOpen, setModalOpen] = useState(false);
   const [modalCursor, setModalCursor] = useState(0);
 
-  const activeAgentIds = new Set(agents.map((a) => a.id));
-
   const handleStopAgent = useCallback(async () => {
-    if (agentCursor >= agents.length) return; // inactive agent selected
+    if (agentCursor >= agents.length) return;
     const agent = agents[agentCursor];
     if (!agent) return;
     try {
@@ -47,22 +45,20 @@ export function App({ registry, taskService, config, projectRoot }: AppProps): R
   }, [agents, agentCursor, registry]);
 
   const handleStartAgent = useCallback(
-    (agentConfig: AgentConfig) => {
-      spawnAgent(agentConfig.id, projectRoot);
+    (provider: ProviderConfig) => {
+      spawnAgent(provider.name, projectRoot);
     },
     [projectRoot],
   );
 
   useInput((input, key) => {
     if (modalOpen) {
-      const startableConfigs = agentConfigs.filter((c) => !activeAgentIds.has(c.id));
-
       if (key.upArrow) {
         setModalCursor((prev) => Math.max(0, prev - 1));
       } else if (key.downArrow) {
-        setModalCursor((prev) => Math.min(startableConfigs.length - 1, prev + 1));
+        setModalCursor((prev) => Math.min(providers.length - 1, prev + 1));
       } else if (key.return) {
-        const selected = startableConfigs[modalCursor];
+        const selected = providers[modalCursor];
         if (selected) {
           handleStartAgent(selected);
         }
@@ -94,8 +90,7 @@ export function App({ registry, taskService, config, projectRoot }: AppProps): R
 
     if (key.downArrow) {
       if (activePanel === 'agents') {
-        const inactiveCount = agentConfigs.filter((c) => !activeAgentIds.has(c.id)).length;
-        setAgentCursor((prev) => Math.min(agents.length + inactiveCount - 1, prev + 1));
+        setAgentCursor((prev) => Math.min(agents.length - 1, prev + 1));
       } else {
         setTaskCursor((prev) => Math.min(tasks.length - 1, prev + 1));
       }
@@ -116,12 +111,11 @@ export function App({ registry, taskService, config, projectRoot }: AppProps): R
 
   return (
     <Box flexDirection="column" width="100%">
-      <AgentPanel agents={agents} configs={agentConfigs} selectedIndex={agentCursor} focused={activePanel === 'agents'} />
+      <AgentPanel agents={agents} selectedIndex={agentCursor} focused={activePanel === 'agents'} />
       <TaskPanel tasks={tasks} selectedIndex={taskCursor} focused={activePanel === 'tasks'} />
       {modalOpen && (
         <AgentStartModal
-          configs={agentConfigs}
-          activeAgentIds={activeAgentIds}
+          providers={providers}
           selectedIndex={modalCursor}
         />
       )}

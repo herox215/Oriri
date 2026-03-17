@@ -1,4 +1,4 @@
-import type { AgentConfig } from '../config/config-types.js';
+import type { RuntimeAgentConfig } from '../config/config-types.js';
 import type { LogService } from '../logs/log-service.js';
 import type { StorageInterface } from '../storage/storage-interface.js';
 import type { TaskService } from '../tasks/task-service.js';
@@ -36,7 +36,7 @@ export interface AgentRunnerDeps {
   registry: AgentRegistry;
   llmProvider: LLMProvider;
   toolRegistry: ToolRegistry;
-  agentConfig: AgentConfig;
+  agentConfig: RuntimeAgentConfig;
   shutdownController: ShutdownController;
   projectRoot: string;
   a2aService?: A2AService;
@@ -283,18 +283,13 @@ export class AgentRunner {
   }
 
   private buildSystemPrompt(
-    config: AgentConfig,
+    config: RuntimeAgentConfig,
     storyContent: string,
     taskMarkdown: string,
   ): string {
     const parts: string[] = [];
 
-    if (config.system_prompt) {
-      parts.push(config.system_prompt);
-    }
-
     parts.push(`You are agent "${config.id}" with role "${config.role}".`);
-    parts.push(`Your capabilities: ${config.capabilities?.join(', ') ?? 'general'}`);
 
     parts.push('\n## Project Story (Collective Memory)\n');
     parts.push(storyContent || '(No story entries yet)');
@@ -394,12 +389,8 @@ export class AgentRunner {
     await logService.appendLog(taskId, agentId, 'refinement loop finished');
   }
 
-  private buildRefinementSystemPrompt(config: AgentConfig, storyContent: string): string {
+  private buildRefinementSystemPrompt(config: RuntimeAgentConfig, storyContent: string): string {
     const parts: string[] = [];
-
-    if (config.system_prompt) {
-      parts.push(config.system_prompt);
-    }
 
     parts.push(`You are agent "${config.id}" with role "${config.role}".`);
     parts.push('You are REFINING a draft task — NOT executing it.');
@@ -505,16 +496,11 @@ export class AgentRunner {
     }
   }
 
-  private buildA2ASystemPrompt(config: AgentConfig, storyContent: string): string {
+  private buildA2ASystemPrompt(config: RuntimeAgentConfig, storyContent: string): string {
     const parts: string[] = [];
-
-    if (config.system_prompt) {
-      parts.push(config.system_prompt);
-    }
 
     parts.push(`You are agent "${config.id}" with role AGENT.`);
     parts.push('You process agent-to-agent (A2A) coordination tasks.');
-    parts.push(`Your capabilities: ${config.capabilities?.join(', ') ?? 'coordination'}`);
 
     parts.push('\n## Project Story (Collective Memory)\n');
     parts.push(storyContent || '(No story entries yet)');

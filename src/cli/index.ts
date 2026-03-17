@@ -42,7 +42,7 @@ function printHelp(): void {
   console.log('');
   console.log('Commands:');
   console.log('  init              Initialize Oriri in the current directory');
-  console.log('  agent-start       Start an agent process');
+  console.log('  start-agent       Start an agent process');
   console.log('  agent-list        Show all registered agents');
   console.log('  agent-stop        Stop an agent or all agents');
   console.log('  mcp-serve         Start the MCP server (stdio transport)');
@@ -62,14 +62,14 @@ async function main(): Promise<void> {
       await initCommand({ force });
       break;
     }
-    case 'agent-start': {
-      const agentId = getArgValue(args, '--agent-id');
-      if (!agentId) {
-        console.error('Missing required flag: --agent-id');
+    case 'start-agent': {
+      const provider = getArgValue(args, '--provider');
+      if (!provider) {
+        console.error('Missing required flag: --provider');
         process.exitCode = 1;
         break;
       }
-      await agentStartCommand({ agentId });
+      await agentStartCommand({ providerName: provider });
       break;
     }
     case 'agent-list': {

@@ -59,9 +59,10 @@ function createMockDeps(overrides?: Partial<AgentRunnerDeps>): AgentRunnerDeps {
     } as unknown as AgentRunnerDeps['toolRegistry'],
     agentConfig: {
       id: 'agent-alpha',
-      display_name: 'Alpha',
+      display_name: 'anthropic',
       model: 'claude-sonnet-4-6',
       role: 'AGENT' as const,
+      provider: 'anthropic' as const,
       api_key: 'test-key',
     },
     shutdownController,

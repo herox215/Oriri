@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { initCommand } from './init.js';
-import { AgentConfigNotFoundError } from '../shared/errors.js';
+import { ProviderNotFoundError } from '../shared/errors.js';
 
 // Mock the agent runner so we don't actually start an LLM loop
 vi.mock('../agents/agent-runner.js', () => ({
@@ -44,46 +44,27 @@ describe('agentStartCommand', () => {
     await rm(testDir, { recursive: true, force: true });
   });
 
-  it('should throw AgentConfigNotFoundError for unknown agent', async () => {
-    await expect(agentStartCommand({ agentId: 'nonexistent', cwd: testDir })).rejects.toThrow(
-      AgentConfigNotFoundError,
+  it('should throw ProviderNotFoundError for unknown provider', async () => {
+    await expect(agentStartCommand({ providerName: 'nonexistent', cwd: testDir })).rejects.toThrow(
+      ProviderNotFoundError,
     );
   });
 
-  it('should throw when agent has no api_key', async () => {
+  it('should start agent when provider config is valid', async () => {
     const configPath = join(testDir, '.oriri', 'config.yaml');
     await writeFile(
       configPath,
       `mode: local
-agents:
-  - id: agent-alpha
-    display_name: "Alpha"
-    model: claude-sonnet-4-6
-    role: AGENT
+provider:
+  - name: mistral
+    model: mistral-large-latest
+    key: test-key-123
 `,
     );
 
-    await expect(agentStartCommand({ agentId: 'agent-alpha', cwd: testDir })).rejects.toThrow(
-      AgentConfigNotFoundError,
-    );
-  });
+    await agentStartCommand({ providerName: 'mistral', cwd: testDir });
 
-  it('should start agent when config is valid', async () => {
-    const configPath = join(testDir, '.oriri', 'config.yaml');
-    await writeFile(
-      configPath,
-      `mode: local
-agents:
-  - id: agent-alpha
-    display_name: "Alpha"
-    model: claude-sonnet-4-6
-    role: AGENT
-    api_key: test-key-123
-`,
-    );
-
-    await agentStartCommand({ agentId: 'agent-alpha', cwd: testDir });
-
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Agent "agent-alpha" started'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('started'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('provider: mistral'));
   });
 });

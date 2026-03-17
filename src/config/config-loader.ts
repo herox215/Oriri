@@ -4,14 +4,12 @@ import { parse } from 'yaml';
 
 import { ConfigNotFoundError, ConfigValidationError } from '../shared/errors.js';
 import {
-  AGENT_ROLES,
   LLM_PROVIDERS,
   STORAGE_MODES,
-  type AgentConfig,
-  type AgentRole,
   type BackupConfig,
   type LLMProviderType,
   type OririConfig,
+  type ProviderConfig,
   type StorageMode,
 } from './config-types.js';
 
@@ -50,88 +48,33 @@ function resolveEnvVarsDeep(obj: unknown): unknown {
   return obj;
 }
 
-function validateAgent(raw: unknown, index: number): AgentConfig {
-  const prefix = `agents[${String(index)}]`;
+function validateProvider(raw: unknown, index: number): ProviderConfig {
+  const prefix = `provider[${String(index)}]`;
 
   if (raw === null || typeof raw !== 'object') {
     throw new ConfigValidationError(`${prefix} must be a mapping`);
   }
 
-  const agent = raw as Record<string, unknown>;
+  const entry = raw as Record<string, unknown>;
 
-  for (const field of ['id', 'display_name', 'model', 'role'] as const) {
-    if (!(field in agent) || typeof agent[field] !== 'string') {
+  for (const field of ['name', 'model', 'key'] as const) {
+    if (!(field in entry) || typeof entry[field] !== 'string') {
       throw new ConfigValidationError(`${prefix} is missing required string field: ${field}`);
     }
   }
 
-  const role = agent['role'] as string;
-  if (!AGENT_ROLES.includes(role as AgentRole)) {
-    throw new ConfigValidationError(
-      `${prefix}.role "${role}" is invalid. Must be one of: ${AGENT_ROLES.join(', ')}`,
-    );
+  const name = entry['name'] as string;
+
+  // Infer LLM provider type from name — must match a known provider
+  if (!LLM_PROVIDERS.includes(name as LLMProviderType)) {
+    // Allow any name; the LLM provider factory will validate at runtime
   }
 
-  if ('capabilities' in agent && agent['capabilities'] !== undefined) {
-    if (
-      !Array.isArray(agent['capabilities']) ||
-      !agent['capabilities'].every((c: unknown): c is string => typeof c === 'string')
-    ) {
-      throw new ConfigValidationError(`${prefix}.capabilities must be a list of strings`);
-    }
-  }
-
-  if (
-    'api_key' in agent &&
-    agent['api_key'] !== undefined &&
-    typeof agent['api_key'] !== 'string'
-  ) {
-    throw new ConfigValidationError(`${prefix}.api_key must be a string`);
-  }
-
-  if (
-    'system_prompt' in agent &&
-    agent['system_prompt'] !== undefined &&
-    typeof agent['system_prompt'] !== 'string'
-  ) {
-    throw new ConfigValidationError(`${prefix}.system_prompt must be a string`);
-  }
-
-  if ('provider' in agent && agent['provider'] !== undefined) {
-    if (
-      typeof agent['provider'] !== 'string' ||
-      !LLM_PROVIDERS.includes(agent['provider'] as LLMProviderType)
-    ) {
-      throw new ConfigValidationError(
-        `${prefix}.provider "${typeof agent['provider'] === 'string' ? agent['provider'] : 'invalid'}" is invalid. Must be one of: ${LLM_PROVIDERS.join(', ')}`,
-      );
-    }
-  }
-
-  const result: AgentConfig = {
-    id: agent['id'] as string,
-    display_name: agent['display_name'] as string,
-    model: agent['model'] as string,
-    role: agent['role'] as AgentRole,
+  return {
+    name,
+    model: entry['model'] as string,
+    key: entry['key'] as string,
   };
-
-  if (typeof agent['api_key'] === 'string') {
-    result.api_key = agent['api_key'];
-  }
-
-  if (typeof agent['system_prompt'] === 'string') {
-    result.system_prompt = agent['system_prompt'];
-  }
-
-  if (typeof agent['provider'] === 'string') {
-    result.provider = agent['provider'] as LLMProviderType;
-  }
-
-  if (Array.isArray(agent['capabilities'])) {
-    result.capabilities = agent['capabilities'] as string[];
-  }
-
-  return result;
 }
 
 function validateConfig(raw: unknown): OririConfig {
@@ -158,12 +101,12 @@ function validateConfig(raw: unknown): OririConfig {
     mode: config['mode'] as StorageMode,
   };
 
-  if ('agents' in config && config['agents'] !== undefined) {
-    if (!Array.isArray(config['agents'])) {
-      throw new ConfigValidationError('agents must be a list');
+  if ('provider' in config && config['provider'] !== undefined) {
+    if (!Array.isArray(config['provider'])) {
+      throw new ConfigValidationError('provider must be a list');
     }
-    result.agents = config['agents'].map((entry: unknown, index: number) =>
-      validateAgent(entry, index),
+    result.provider = config['provider'].map((entry: unknown, index: number) =>
+      validateProvider(entry, index),
     );
   }
 

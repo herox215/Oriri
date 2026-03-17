@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 
 import { loadConfig } from '../config/config-loader.js';
+import type { RuntimeAgentConfig } from '../config/config-types.js';
 import { FilesystemStorage } from '../storage/filesystem-storage.js';
 import { LogService } from '../logs/log-service.js';
 import { RoleService } from '../agents/role-service.js';
@@ -14,10 +15,12 @@ import { createOririTools } from '../tools/oriri-tools.js';
 import { createCodeTools } from '../tools/code-tools.js';
 import { ConsentService } from '../a2a/consent-service.js';
 import { A2AService } from '../a2a/a2a-service.js';
-import { AgentConfigNotFoundError } from '../shared/errors.js';
+import { ProviderNotFoundError } from '../shared/errors.js';
+import { generateAgentId } from '../agents/agent-id.js';
+import type { LLMProviderType } from '../config/config-types.js';
 
 export interface AgentStartOptions {
-  agentId: string;
+  providerName: string;
   cwd?: string;
 }
 
@@ -26,14 +29,21 @@ export async function agentStartCommand(options: AgentStartOptions): Promise<voi
   const basePath = join(projectRoot, '.oriri');
   const config = await loadConfig(basePath);
 
-  const agentConfig = config.agents?.find((a) => a.id === options.agentId);
-  if (!agentConfig) {
-    throw new AgentConfigNotFoundError(options.agentId);
+  const providerConfig = config.provider?.find((p) => p.name === options.providerName);
+  if (!providerConfig) {
+    throw new ProviderNotFoundError(options.providerName);
   }
 
-  if (!agentConfig.api_key) {
-    throw new AgentConfigNotFoundError(`${options.agentId}" — missing api_key in config.yaml`);
-  }
+  const agentId = generateAgentId(providerConfig.name);
+
+  const agentConfig: RuntimeAgentConfig = {
+    id: agentId,
+    display_name: providerConfig.name,
+    model: providerConfig.model,
+    role: 'AGENT',
+    provider: providerConfig.name as LLMProviderType,
+    api_key: providerConfig.key,
+  };
 
   const storage = new FilesystemStorage(basePath);
   const logService = new LogService(storage);
@@ -43,8 +53,7 @@ export async function agentStartCommand(options: AgentStartOptions): Promise<voi
   const consentService = new ConsentService(storage, roleService);
   const a2aService = new A2AService(storage);
 
-  const provider = agentConfig.provider ?? 'anthropic';
-  const llmProvider = createLLMProvider(provider, agentConfig.api_key);
+  const llmProvider = createLLMProvider(agentConfig.provider, agentConfig.api_key);
 
   const toolRegistry = new ToolRegistry();
   toolRegistry.registerAll(
@@ -73,7 +82,7 @@ export async function agentStartCommand(options: AgentStartOptions): Promise<voi
   const shutdownController = setupGracefulShutdown(agentConfig.id, registry);
 
   console.log(
-    `Agent "${agentConfig.id}" started (role: ${agentConfig.role}, model: ${agentConfig.model})`,
+    `Agent "${agentConfig.id}" started (role: ${agentConfig.role}, model: ${agentConfig.model}, provider: ${providerConfig.name})`,
   );
 
   const runner = new AgentRunner({

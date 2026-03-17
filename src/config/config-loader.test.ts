@@ -30,7 +30,7 @@ describe('loadConfig', () => {
       await writeConfig('mode: local');
       const config = await loadConfig(basePath);
       expect(config.mode).toBe('local');
-      expect(config.agents).toBeUndefined();
+      expect(config.provider).toBeUndefined();
     });
 
     it('should accept mode: server', async () => {
@@ -46,50 +46,40 @@ describe('loadConfig', () => {
     });
   });
 
-  describe('full config with agents', () => {
-    it('should parse agents with all fields', async () => {
+  describe('full config with providers', () => {
+    it('should parse providers with all fields', async () => {
       await writeConfig(`
 mode: local
-agents:
-  - id: agent-alpha
-    display_name: Alpha
+provider:
+  - name: mistral
+    model: mistral-large-latest
+    key: sk-test-123
+  - name: anthropic
     model: claude-sonnet-4-6
-    role: AGENT
-    api_key: sk-test-123
-    capabilities:
-      - typescript
-      - testing
-  - id: agent-beta
-    display_name: Beta
-    model: claude-haiku-4-5
-    role: AGENT
+    key: sk-ant-456
 `);
       const config = await loadConfig(basePath);
       expect(config.mode).toBe('local');
-      expect(config.agents).toHaveLength(2);
+      expect(config.provider).toHaveLength(2);
 
-      const agents = config.agents;
-      expect(agents).toBeDefined();
+      const providers = config.provider;
+      expect(providers).toBeDefined();
 
-      const alpha = agents?.[0];
-      expect(alpha?.id).toBe('agent-alpha');
-      expect(alpha?.display_name).toBe('Alpha');
-      expect(alpha?.model).toBe('claude-sonnet-4-6');
-      expect(alpha?.role).toBe('AGENT');
-      expect(alpha?.api_key).toBe('sk-test-123');
-      expect(alpha?.capabilities).toEqual(['typescript', 'testing']);
+      const mistral = providers?.[0];
+      expect(mistral?.name).toBe('mistral');
+      expect(mistral?.model).toBe('mistral-large-latest');
+      expect(mistral?.key).toBe('sk-test-123');
 
-      const beta = agents?.[1];
-      expect(beta?.id).toBe('agent-beta');
-      expect(beta?.role).toBe('AGENT');
-      expect(beta?.api_key).toBeUndefined();
-      expect(beta?.capabilities).toBeUndefined();
+      const anthropic = providers?.[1];
+      expect(anthropic?.name).toBe('anthropic');
+      expect(anthropic?.model).toBe('claude-sonnet-4-6');
+      expect(anthropic?.key).toBe('sk-ant-456');
     });
 
-    it('should accept empty agents array', async () => {
-      await writeConfig('mode: local\nagents: []');
+    it('should accept empty provider array', async () => {
+      await writeConfig('mode: local\nprovider: []');
       const config = await loadConfig(basePath);
-      expect(config.agents).toEqual([]);
+      expect(config.provider).toEqual([]);
     });
   });
 
@@ -110,15 +100,13 @@ agents:
       process.env[ENV_KEY] = 'sk-resolved-key';
       await writeConfig(`
 mode: local
-agents:
-  - id: agent-alpha
-    display_name: Alpha
-    model: claude-sonnet-4-6
-    role: AGENT
-    api_key: \${${ENV_KEY}}
+provider:
+  - name: mistral
+    model: mistral-large-latest
+    key: \${${ENV_KEY}}
 `);
       const config = await loadConfig(basePath);
-      expect(config.agents?.[0]?.api_key).toBe('sk-resolved-key');
+      expect(config.provider?.[0]?.key).toBe('sk-resolved-key');
     });
 
     it('should resolve partial substitution in strings', async () => {
@@ -126,25 +114,22 @@ agents:
       process.env[ENV_PORT] = '8080';
       await writeConfig(`
 mode: local
-agents:
-  - id: agent-alpha
-    display_name: Alpha
+provider:
+  - name: custom
     model: \${${ENV_HOST}}:\${${ENV_PORT}}
-    role: AGENT
+    key: test-key
 `);
       const config = await loadConfig(basePath);
-      expect(config.agents?.[0]?.model).toBe('localhost:8080');
+      expect(config.provider?.[0]?.model).toBe('localhost:8080');
     });
 
     it('should throw ConfigValidationError for undefined env var', async () => {
       await writeConfig(`
 mode: local
-agents:
-  - id: agent-alpha
-    display_name: Alpha
-    model: claude-sonnet-4-6
-    role: AGENT
-    api_key: \${NONEXISTENT_VAR_12345}
+provider:
+  - name: mistral
+    model: mistral-large-latest
+    key: \${NONEXISTENT_VAR_12345}
 `);
       await expect(loadConfig(basePath)).rejects.toThrow(ConfigValidationError);
       await expect(loadConfig(basePath)).rejects.toThrow('NONEXISTENT_VAR_12345');
@@ -167,73 +152,29 @@ agents:
     });
 
     it('should throw on missing mode', async () => {
-      await writeConfig('agents: []');
+      await writeConfig('provider: []');
       await expect(loadConfig(basePath)).rejects.toThrow(ConfigValidationError);
       await expect(loadConfig(basePath)).rejects.toThrow('Missing required field: mode');
     });
   });
 
-  // Agent validation
+  // Provider validation
 
-  describe('agent validation', () => {
+  describe('provider validation', () => {
     it('should throw on missing required fields', async () => {
       await writeConfig(`
 mode: local
-agents:
-  - id: agent-alpha
-    display_name: Alpha
+provider:
+  - name: mistral
 `);
       await expect(loadConfig(basePath)).rejects.toThrow(ConfigValidationError);
-      await expect(loadConfig(basePath)).rejects.toThrow('agents[0]');
+      await expect(loadConfig(basePath)).rejects.toThrow('provider[0]');
     });
 
-    it('should throw on unknown role', async () => {
-      await writeConfig(`
-mode: local
-agents:
-  - id: agent-alpha
-    display_name: Alpha
-    model: claude-sonnet-4-6
-    role: DEBUGGER
-`);
+    it('should throw on non-array provider', async () => {
+      await writeConfig('mode: local\nprovider: not-a-list');
       await expect(loadConfig(basePath)).rejects.toThrow(ConfigValidationError);
-      await expect(loadConfig(basePath)).rejects.toThrow('agents[0].role "DEBUGGER" is invalid');
-    });
-
-    it('should throw on non-array agents', async () => {
-      await writeConfig('mode: local\nagents: not-a-list');
-      await expect(loadConfig(basePath)).rejects.toThrow(ConfigValidationError);
-      await expect(loadConfig(basePath)).rejects.toThrow('agents must be a list');
-    });
-
-    it('should throw on non-string capabilities', async () => {
-      await writeConfig(`
-mode: local
-agents:
-  - id: agent-alpha
-    display_name: Alpha
-    model: claude-sonnet-4-6
-    role: AGENT
-    capabilities:
-      - 123
-`);
-      await expect(loadConfig(basePath)).rejects.toThrow(ConfigValidationError);
-      await expect(loadConfig(basePath)).rejects.toThrow('capabilities must be a list of strings');
-    });
-
-    it('should validate both roles', async () => {
-      for (const role of ['AGENT', 'MCP_CLIENT']) {
-        await writeConfig(`
-mode: local
-agents:
-  - id: agent-test
-    display_name: Test
-    model: test-model
-    role: ${role}
-`);
-        const config = await loadConfig(basePath);
-        expect(config.agents?.[0]?.role).toBe(role);
-      }
+      await expect(loadConfig(basePath)).rejects.toThrow('provider must be a list');
     });
   });
 
@@ -271,18 +212,17 @@ agents:
       expect(config.mode).toBe('local');
     });
 
-    it('should ignore unknown extra fields in agent entries', async () => {
+    it('should ignore unknown extra fields in provider entries', async () => {
       await writeConfig(`
 mode: local
-agents:
-  - id: agent-alpha
-    display_name: Alpha
-    model: claude-sonnet-4-6
-    role: AGENT
+provider:
+  - name: mistral
+    model: mistral-large-latest
+    key: test-key
     extra_field: extra_value
 `);
       const config = await loadConfig(basePath);
-      expect(config.agents?.[0]?.id).toBe('agent-alpha');
+      expect(config.provider?.[0]?.name).toBe('mistral');
     });
 
     it('should handle config with comments', async () => {
