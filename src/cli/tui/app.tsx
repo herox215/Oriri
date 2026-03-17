@@ -36,6 +36,7 @@ export function App({ registry, taskService, config, projectRoot }: AppProps): R
   const activeAgentIds = new Set(agents.map((a) => a.id));
 
   const handleStopAgent = useCallback(async () => {
+    if (agentCursor >= agents.length) return; // inactive agent selected
     const agent = agents[agentCursor];
     if (!agent) return;
     try {
@@ -93,7 +94,8 @@ export function App({ registry, taskService, config, projectRoot }: AppProps): R
 
     if (key.downArrow) {
       if (activePanel === 'agents') {
-        setAgentCursor((prev) => Math.min(agents.length - 1, prev + 1));
+        const inactiveCount = agentConfigs.filter((c) => !activeAgentIds.has(c.id)).length;
+        setAgentCursor((prev) => Math.min(agents.length + inactiveCount - 1, prev + 1));
       } else {
         setTaskCursor((prev) => Math.min(tasks.length - 1, prev + 1));
       }
@@ -114,7 +116,7 @@ export function App({ registry, taskService, config, projectRoot }: AppProps): R
 
   return (
     <Box flexDirection="column" width="100%">
-      <AgentPanel agents={agents} selectedIndex={agentCursor} focused={activePanel === 'agents'} />
+      <AgentPanel agents={agents} configs={agentConfigs} selectedIndex={agentCursor} focused={activePanel === 'agents'} />
       <TaskPanel tasks={tasks} selectedIndex={taskCursor} focused={activePanel === 'tasks'} />
       {modalOpen && (
         <AgentStartModal
