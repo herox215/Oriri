@@ -25,6 +25,7 @@ export async function initCommand(options: { force: boolean; cwd?: string }): Pr
   }
 
   await mkdir(join(baseDir, 'tasks'), { recursive: true });
+  await mkdir(join(baseDir, 'human-tasks'), { recursive: true });
   await mkdir(join(baseDir, 'agent-tasks'), { recursive: true });
   await mkdir(join(baseDir, 'agents'), { recursive: true });
 

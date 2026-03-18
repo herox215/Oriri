@@ -211,7 +211,7 @@ describe('createOririTools', () => {
   describe('refine_task', () => {
     it('should call taskService.refineTask with correct args', async () => {
       (deps.taskService as unknown as Record<string, ReturnType<typeof vi.fn>>).refineTask =
-        vi.fn().mockResolvedValue(undefined);
+        vi.fn().mockResolvedValue({ targetStatus: 'open' });
 
       // Recreate tools with the updated mock
       tools = createOririTools(deps);

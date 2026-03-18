@@ -39,6 +39,12 @@ function makeStorage(taskMap: Record<string, string> = {}): StorageInterface {
     listA2A: vi.fn(),
     appendA2ALog: vi.fn(),
     readA2ALog: vi.fn(),
+    readHumanTask: vi.fn((id: string) => Promise.reject(new StorageReadError(`H2A ${id}`))),
+    writeHumanTask: vi.fn(),
+    listHumanTasks: vi.fn().mockResolvedValue([]),
+    deleteHumanTask: vi.fn(),
+    appendHumanTaskLog: vi.fn(),
+    readHumanTaskLog: vi.fn().mockResolvedValue(''),
   } as unknown as StorageInterface;
 }
 
@@ -59,7 +65,7 @@ describe('createUpdateTaskTool', () => {
     const logService = new LogService(storage);
     const taskService = new TaskService(storage, logService, roleService);
 
-    const { handler } = createUpdateTaskTool(taskService, logService, storage);
+    const { handler } = createUpdateTaskTool(taskService);
     const newContent = '# Updated\n\nNew content';
     const result = await handler({ task_id: 'T-001', content: newContent, client_id: 'agent-x' });
 
@@ -81,7 +87,7 @@ describe('createUpdateTaskTool', () => {
     const logService = new LogService(storage);
     const taskService = new TaskService(storage, logService, roleService);
 
-    const { handler } = createUpdateTaskTool(taskService, logService, storage);
+    const { handler } = createUpdateTaskTool(taskService);
     await expect(handler({ task_id: 'T-999', content: 'x' })).rejects.toThrow(TaskNotFoundError);
   });
 
@@ -92,7 +98,7 @@ describe('createUpdateTaskTool', () => {
     const logService = new LogService(storage);
     const taskService = new TaskService(storage, logService, roleService);
 
-    const { handler } = createUpdateTaskTool(taskService, logService, storage);
+    const { handler } = createUpdateTaskTool(taskService);
     await handler({ task_id: 'T-001', content: '# new' });
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -105,7 +111,7 @@ describe('createUpdateTaskTool', () => {
     const logService = new LogService(storage);
     const taskService = new TaskService(storage, logService, roleService);
 
-    const { definition } = createUpdateTaskTool(taskService, logService, storage);
+    const { definition } = createUpdateTaskTool(taskService);
     expect(definition.name).toBe('update_task');
     expect(definition.inputSchema.required).toContain('task_id');
     expect(definition.inputSchema.required).toContain('content');

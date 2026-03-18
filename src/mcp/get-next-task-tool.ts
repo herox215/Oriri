@@ -1,6 +1,5 @@
 import type { Tool, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { TaskService } from '../tasks/task-service.js';
-import type { LogService } from '../logs/log-service.js';
 import type { AgentRegistry } from '../agents/agent-registry.js';
 import type { AgentRole } from '../config/config-types.js';
 import {
@@ -21,7 +20,6 @@ async function resolveRole(registry: AgentRegistry, clientId?: string): Promise<
 export function createGetNextTaskTool(
   taskService: TaskService,
   registry: AgentRegistry,
-  logService: LogService,
 ): RegisterToolResult {
   const definition: Tool = {
     name: 'get_next_task',
@@ -80,7 +78,7 @@ export function createGetNextTaskTool(
         if (!matches) continue;
       }
 
-      const log = await logService.getLog(id);
+      const log = await taskService.getTaskLog(id);
       const text = `## Task\n\n${taskMarkdown}\n\n## Log\n\n${log}`;
       return { content: [{ type: 'text', text }] };
     }

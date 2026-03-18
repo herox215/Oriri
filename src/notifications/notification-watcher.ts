@@ -60,8 +60,6 @@ export function shouldNotifyA2AChange(
     return { title: 'Oriri — Agent Stale', message: `Agent silent detected (${id})` };
   }
 
-  // TODO: detect H2A response when H2A feature is implemented
-
   if (config.events.openConsent) {
     const id = extractIdFromMarkdown(markdown) ?? 'unknown';
     return { title: 'Oriri — Consent Needed', message: `Vote required on ${type} (${id})` };
@@ -122,9 +120,11 @@ export class NotificationWatcher {
 
   private async processFile(filename: string): Promise<void> {
     const isTask = /^tasks\/task-[^/]+\.md$/.test(filename) && !filename.endsWith('.log.md');
+    const isHumanTask =
+      /^human-tasks\/task-[^/]+\.md$/.test(filename) && !filename.endsWith('.log.md');
     const isA2A = /^agent-tasks\/a2a-[^/]+\.md$/.test(filename);
 
-    if (!isTask && !isA2A) return;
+    if (!isTask && !isHumanTask && !isA2A) return;
 
     const fullPath = join(this.deps.basePath, filename);
     let markdown: string;
@@ -135,7 +135,7 @@ export class NotificationWatcher {
     }
 
     let notification: OsNotification | null = null;
-    if (isTask) {
+    if (isTask || isHumanTask) {
       notification = shouldNotifyTaskChange(markdown, this.config);
     } else {
       notification = shouldNotifyA2AChange(markdown, this.config);

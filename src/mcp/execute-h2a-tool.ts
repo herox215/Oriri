@@ -1,6 +1,5 @@
 import type { Tool, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { TaskService } from '../tasks/task-service.js';
-import type { LogService } from '../logs/log-service.js';
 import type { H2APayload } from '../tasks/h2a-actions.js';
 import { parseH2AContextBundle } from '../tasks/h2a-actions.js';
 import { extractContextBundleFromMarkdown } from '../tasks/task-markdown.js';
@@ -8,10 +7,7 @@ import { InvalidH2AActionError } from '../shared/errors.js';
 import type { ToolHandler } from './mcp-server.js';
 import type { RegisterToolResult } from './client-registration.js';
 
-export function createExecuteH2ATool(
-  taskService: TaskService,
-  logService: LogService,
-): RegisterToolResult {
+export function createExecuteH2ATool(taskService: TaskService): RegisterToolResult {
   const definition: Tool = {
     name: 'execute_h2a',
     description:
@@ -57,7 +53,7 @@ export function createExecuteH2ATool(
     if (validationResult === 'conflict') {
       const description = conflictDescription ?? 'No description provided';
       await taskService.handleHumanInput(taskId, `Conflict flagged by ${clientId}: ${description}`);
-      await logService.appendLog(taskId, clientId, `h2a conflict: ${description}`);
+      await taskService.appendTaskLog(taskId, clientId, `h2a conflict: ${description}`);
 
       return {
         content: [
@@ -78,7 +74,7 @@ export function createExecuteH2ATool(
       }
 
       await executeH2AAction(taskService, payload);
-      await logService.appendLog(
+      await taskService.appendTaskLog(
         taskId,
         clientId,
         `h2a executed: ${payload.action} on ${payload.targetId}`,
@@ -102,7 +98,7 @@ export function createExecuteH2ATool(
 
     // valid — agent is confident, execute immediately
     await executeH2AAction(taskService, payload);
-    await logService.appendLog(
+    await taskService.appendTaskLog(
       taskId,
       clientId,
       `h2a executed: ${payload.action} on ${payload.targetId}`,

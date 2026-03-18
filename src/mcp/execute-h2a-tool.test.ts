@@ -5,23 +5,27 @@ import { RoleService } from '../agents/role-service.js';
 import { ACTIVE_AGENTS_MD } from '../shared/default-content.js';
 import { buildTaskMarkdown } from '../tasks/task-markdown.js';
 import { buildH2AContextBundle } from '../tasks/h2a-actions.js';
-import { InvalidH2AActionError } from '../shared/errors.js';
+import { InvalidH2AActionError, StorageReadError } from '../shared/errors.js';
 import { createExecuteH2ATool } from './execute-h2a-tool.js';
 import type { StorageInterface } from '../storage/storage-interface.js';
 
-function makeStorage(taskMap: Record<string, string> = {}): StorageInterface {
+function makeStorage(
+  regularTasks: Record<string, string> = {},
+  humanTasks: Record<string, string> = {},
+): StorageInterface {
   const logs: Record<string, string[]> = {};
+  const humanLogs: Record<string, string[]> = {};
   return {
-    listTasks: vi.fn(async () => Object.keys(taskMap)),
+    listTasks: vi.fn(async () => Object.keys(regularTasks)),
     writeTask: vi.fn(async (id: string, content: string) => {
-      taskMap[id] = content;
+      regularTasks[id] = content;
     }),
     readTask: vi.fn(async (id: string) => {
-      if (!taskMap[id]) throw new Error(`not found: ${id}`);
-      return taskMap[id];
+      if (!regularTasks[id]) throw new StorageReadError(`Task ${id}`);
+      return regularTasks[id];
     }),
     deleteTask: vi.fn(async (id: string) => {
-      delete taskMap[id];
+      delete regularTasks[id];
     }),
     appendLog: vi.fn(async (id: string, line: string) => {
       if (!logs[id]) logs[id] = [];
@@ -40,6 +44,22 @@ function makeStorage(taskMap: Record<string, string> = {}): StorageInterface {
     listA2A: vi.fn(),
     appendA2ALog: vi.fn(),
     readA2ALog: vi.fn(),
+    readHumanTask: vi.fn(async (id: string) => {
+      if (!humanTasks[id]) throw new StorageReadError(`H2A ${id}`);
+      return humanTasks[id];
+    }),
+    writeHumanTask: vi.fn(async (id: string, content: string) => {
+      humanTasks[id] = content;
+    }),
+    listHumanTasks: vi.fn(async () => Object.keys(humanTasks)),
+    deleteHumanTask: vi.fn(async (id: string) => {
+      delete humanTasks[id];
+    }),
+    appendHumanTaskLog: vi.fn(async (id: string, line: string) => {
+      if (!humanLogs[id]) humanLogs[id] = [];
+      humanLogs[id].push(line);
+    }),
+    readHumanTaskLog: vi.fn(async (id: string) => (humanLogs[id] ?? []).join('\n')),
   } as unknown as StorageInterface;
 }
 
@@ -70,13 +90,14 @@ const targetTask = buildTaskMarkdown({
 
 describe('createExecuteH2ATool', () => {
   it('deletes target task and completes H2A task on valid execution', async () => {
-    const taskMap = { 'T-H2A': h2aTask, 'T-001': targetTask };
-    const storage = makeStorage(taskMap);
+    const regularTasks = { 'T-001': targetTask };
+    const humanTasks = { 'T-H2A': h2aTask };
+    const storage = makeStorage(regularTasks, humanTasks);
     const roleService = new RoleService();
     const logService = new LogService(storage);
     const taskService = new TaskService(storage, logService, roleService);
 
-    const { handler } = createExecuteH2ATool(taskService, logService);
+    const { handler } = createExecuteH2ATool(taskService);
     const result = await handler({
       task_id: 'T-H2A',
       client_id: 'agent-1',
@@ -93,7 +114,7 @@ describe('createExecuteH2ATool', () => {
     expect(storage.deleteTask).toHaveBeenCalledWith('T-001');
 
     // H2A task status set to done
-    expect(taskMap['T-H2A']).toContain('| status | done');
+    expect(humanTasks['T-H2A']).toContain('| status | done');
   });
 
   it('executes action on confirmed after conflict resolution with human input', async () => {
@@ -109,13 +130,14 @@ describe('createExecuteH2ATool', () => {
       contextBundle: h2aContextBundle + '\n\n### Human Input\n\nConfirmed, please delete.',
     });
 
-    const taskMap = { 'T-H2A': h2aTaskWithHumanInput, 'T-001': targetTask };
-    const storage = makeStorage(taskMap);
+    const regularTasks = { 'T-001': targetTask };
+    const humanTasks = { 'T-H2A': h2aTaskWithHumanInput };
+    const storage = makeStorage(regularTasks, humanTasks);
     const roleService = new RoleService();
     const logService = new LogService(storage);
     const taskService = new TaskService(storage, logService, roleService);
 
-    const { handler } = createExecuteH2ATool(taskService, logService);
+    const { handler } = createExecuteH2ATool(taskService);
     const result = await handler({
       task_id: 'T-H2A',
       client_id: 'agent-1',
@@ -132,17 +154,16 @@ describe('createExecuteH2ATool', () => {
     expect(storage.deleteTask).toHaveBeenCalledWith('T-001');
 
     // H2A task status set to done
-    expect(taskMap['T-H2A']).toContain('| status | done');
+    expect(humanTasks['T-H2A']).toContain('| status | done');
   });
 
   it('throws InvalidH2AActionError on confirmed without prior human input', async () => {
-    const taskMap = { 'T-H2A': h2aTask, 'T-001': targetTask };
-    const storage = makeStorage(taskMap);
+    const storage = makeStorage({ 'T-001': targetTask }, { 'T-H2A': h2aTask });
     const roleService = new RoleService();
     const logService = new LogService(storage);
     const taskService = new TaskService(storage, logService, roleService);
 
-    const { handler } = createExecuteH2ATool(taskService, logService);
+    const { handler } = createExecuteH2ATool(taskService);
     await expect(
       handler({ task_id: 'T-H2A', client_id: 'agent-1', validation_result: 'confirmed' }),
     ).rejects.toThrow(InvalidH2AActionError);
@@ -152,13 +173,14 @@ describe('createExecuteH2ATool', () => {
   });
 
   it('flags conflict and sets needs_human', async () => {
-    const taskMap = { 'T-H2A': h2aTask, 'T-001': targetTask };
-    const storage = makeStorage(taskMap);
+    const regularTasks = { 'T-001': targetTask };
+    const humanTasks = { 'T-H2A': h2aTask };
+    const storage = makeStorage(regularTasks, humanTasks);
     const roleService = new RoleService();
     const logService = new LogService(storage);
     const taskService = new TaskService(storage, logService, roleService);
 
-    const { handler } = createExecuteH2ATool(taskService, logService);
+    const { handler } = createExecuteH2ATool(taskService);
     const result = await handler({
       task_id: 'T-H2A',
       client_id: 'agent-1',
@@ -172,10 +194,10 @@ describe('createExecuteH2ATool', () => {
     expect(data.needs_human).toBe(true);
 
     // H2A task set to open (handleHumanInput clears assigned_to and sets open)
-    expect(taskMap['T-H2A']).toContain('| status | open');
+    expect(humanTasks['T-H2A']).toContain('| status | open');
 
     // Target task still exists
-    expect(taskMap['T-001']).toBeDefined();
+    expect(regularTasks['T-001']).toBeDefined();
   });
 
   it('throws InvalidH2AActionError for unparseable payload', async () => {
@@ -190,24 +212,24 @@ describe('createExecuteH2ATool', () => {
       contextBundle: 'garbage content',
     });
 
-    const storage = makeStorage({ 'T-BAD': badTask });
+    const storage = makeStorage({}, { 'T-BAD': badTask });
     const roleService = new RoleService();
     const logService = new LogService(storage);
     const taskService = new TaskService(storage, logService, roleService);
 
-    const { handler } = createExecuteH2ATool(taskService, logService);
+    const { handler } = createExecuteH2ATool(taskService);
     await expect(
       handler({ task_id: 'T-BAD', client_id: 'agent-1', validation_result: 'valid' }),
     ).rejects.toThrow(InvalidH2AActionError);
   });
 
   it('tool definition has correct name and required fields', () => {
-    const storage = makeStorage();
+    const storage = makeStorage({}, {});
     const roleService = new RoleService();
     const logService = new LogService(storage);
     const taskService = new TaskService(storage, logService, roleService);
 
-    const { definition } = createExecuteH2ATool(taskService, logService);
+    const { definition } = createExecuteH2ATool(taskService);
     expect(definition.name).toBe('execute_h2a');
     expect(definition.inputSchema.required).toContain('task_id');
     expect(definition.inputSchema.required).toContain('client_id');

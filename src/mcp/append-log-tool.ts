@@ -1,9 +1,9 @@
 import type { Tool, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import type { LogService } from '../logs/log-service.js';
+import type { TaskService } from '../tasks/task-service.js';
 import type { ToolHandler } from './mcp-server.js';
 import type { RegisterToolResult } from './client-registration.js';
 
-export function createAppendLogTool(logService: LogService): RegisterToolResult {
+export function createAppendLogTool(taskService: TaskService): RegisterToolResult {
   const definition: Tool = {
     name: 'append_log',
     description: 'Append a log entry to a task activity log.',
@@ -26,7 +26,7 @@ export function createAppendLogTool(logService: LogService): RegisterToolResult 
     const message = typeof args.message === 'string' ? args.message : '';
     const clientId = typeof args.client_id === 'string' ? args.client_id : 'mcp-anonymous';
 
-    await logService.appendLog(id, clientId, message);
+    await taskService.appendTaskLog(id, clientId, message);
     return { content: [{ type: 'text', text: JSON.stringify({ ok: true }) }] };
   };
 
