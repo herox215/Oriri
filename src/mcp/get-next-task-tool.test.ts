@@ -37,6 +37,12 @@ function makeStorage(taskMap: Record<string, string> = {}): StorageInterface {
     listA2A: vi.fn(),
     appendA2ALog: vi.fn(),
     readA2ALog: vi.fn(),
+    readHumanTask: vi.fn(),
+    writeHumanTask: vi.fn(),
+    listHumanTasks: vi.fn().mockResolvedValue([]),
+    deleteHumanTask: vi.fn(),
+    appendHumanTaskLog: vi.fn(),
+    readHumanTaskLog: vi.fn().mockResolvedValue(''),
   } as unknown as StorageInterface;
 }
 
@@ -77,7 +83,7 @@ describe('createGetNextTaskTool', () => {
     const taskService = new TaskService(storage, logService, roleService);
     const registry = new AgentRegistry(storage);
 
-    const { handler } = createGetNextTaskTool(taskService, registry, logService);
+    const { handler } = createGetNextTaskTool(taskService, registry);
     const result = await handler({});
 
     expect(result.isError).toBeFalsy();
@@ -94,7 +100,7 @@ describe('createGetNextTaskTool', () => {
     const taskService = new TaskService(storage, logService, roleService);
     const registry = new AgentRegistry(storage);
 
-    const { handler } = createGetNextTaskTool(taskService, registry, logService);
+    const { handler } = createGetNextTaskTool(taskService, registry);
     const result = await handler({});
 
     const text = (result.content[0] as { text: string }).text;
@@ -108,7 +114,7 @@ describe('createGetNextTaskTool', () => {
     const taskService = new TaskService(storage, logService, roleService);
     const registry = new AgentRegistry(storage);
 
-    const { handler } = createGetNextTaskTool(taskService, registry, logService);
+    const { handler } = createGetNextTaskTool(taskService, registry);
     const result = await handler({});
 
     const text = (result.content[0] as { text: string }).text;
@@ -122,7 +128,7 @@ describe('createGetNextTaskTool', () => {
     const taskService = new TaskService(storage, logService, roleService);
     const registry = new AgentRegistry(storage);
 
-    const { handler } = createGetNextTaskTool(taskService, registry, logService);
+    const { handler } = createGetNextTaskTool(taskService, registry);
 
     // Task contains "frontend" — should match
     const hit = await handler({ capabilities: ['frontend'] });
@@ -148,7 +154,7 @@ describe('createGetNextTaskTool', () => {
       since: '2024-01-01T00:00:00.000Z',
     });
 
-    const { handler } = createGetNextTaskTool(taskService, registry, logService);
+    const { handler } = createGetNextTaskTool(taskService, registry);
     const result = await handler({ client_id: 'client-1' });
 
     expect(result.isError).toBeFalsy();
@@ -162,7 +168,7 @@ describe('createGetNextTaskTool', () => {
     const taskService = new TaskService(storage, logService, roleService);
     const registry = new AgentRegistry(storage);
 
-    const { definition } = createGetNextTaskTool(taskService, registry, logService);
+    const { definition } = createGetNextTaskTool(taskService, registry);
     expect(definition.name).toBe('get_next_task');
   });
 });

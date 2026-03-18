@@ -34,6 +34,14 @@ function makeStorage(taskMap: Record<string, string> = {}): StorageInterface {
     listA2A: vi.fn(),
     appendA2ALog: vi.fn(),
     readA2ALog: vi.fn(),
+    readHumanTask: vi.fn(async (id: string) => {
+      throw new StorageReadError(id);
+    }),
+    writeHumanTask: vi.fn(),
+    listHumanTasks: vi.fn().mockResolvedValue([]),
+    deleteHumanTask: vi.fn(),
+    appendHumanTaskLog: vi.fn(),
+    readHumanTaskLog: vi.fn().mockResolvedValue(''),
   } as unknown as StorageInterface;
 }
 
@@ -53,7 +61,7 @@ describe('createInspectTaskTool', () => {
     const logService = new LogService(storage);
     const taskService = new TaskService(storage, logService, roleService);
 
-    const { handler } = createInspectTaskTool(taskService, logService);
+    const { handler } = createInspectTaskTool(taskService);
     const result = await handler({ task_id: 'T-001' });
 
     expect(result.isError).toBeFalsy();
@@ -70,7 +78,7 @@ describe('createInspectTaskTool', () => {
     const logService = new LogService(storage);
     const taskService = new TaskService(storage, logService, roleService);
 
-    const { handler } = createInspectTaskTool(taskService, logService);
+    const { handler } = createInspectTaskTool(taskService);
     await expect(handler({ task_id: 'T-999' })).rejects.toThrow(TaskNotFoundError);
   });
 
@@ -80,7 +88,7 @@ describe('createInspectTaskTool', () => {
     const logService = new LogService(storage);
     const taskService = new TaskService(storage, logService, roleService);
 
-    const { definition } = createInspectTaskTool(taskService, logService);
+    const { definition } = createInspectTaskTool(taskService);
     expect(definition.name).toBe('inspect_task');
     expect(definition.inputSchema.required).toContain('task_id');
   });

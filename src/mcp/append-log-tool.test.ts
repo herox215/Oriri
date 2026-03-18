@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
+import { TaskService } from '../tasks/task-service.js';
 import { LogService } from '../logs/log-service.js';
+import { RoleService } from '../agents/role-service.js';
 import { createAppendLogTool } from './append-log-tool.js';
 import type { StorageInterface } from '../storage/storage-interface.js';
 
@@ -7,9 +9,9 @@ function makeStorage(): StorageInterface {
   return {
     appendLog: vi.fn(),
     readLog: vi.fn(),
-    readTask: vi.fn(),
+    readTask: vi.fn().mockResolvedValue('# Task'),
     writeTask: vi.fn(),
-    listTasks: vi.fn(),
+    listTasks: vi.fn().mockResolvedValue([]),
     deleteTask: vi.fn(),
     readStory: vi.fn(),
     appendStory: vi.fn(),
@@ -23,14 +25,23 @@ function makeStorage(): StorageInterface {
     listA2A: vi.fn(),
     appendA2ALog: vi.fn(),
     readA2ALog: vi.fn(),
+    readHumanTask: vi.fn(),
+    writeHumanTask: vi.fn(),
+    listHumanTasks: vi.fn().mockResolvedValue([]),
+    deleteHumanTask: vi.fn(),
+    appendHumanTaskLog: vi.fn(),
+    readHumanTaskLog: vi.fn().mockResolvedValue(''),
   } as unknown as StorageInterface;
 }
 
 describe('createAppendLogTool', () => {
   it('appends a log entry with provided client_id', async () => {
     const storage = makeStorage();
+    const roleService = new RoleService();
     const logService = new LogService(storage);
-    const { handler } = createAppendLogTool(logService);
+    const taskService = new TaskService(storage, logService, roleService);
+
+    const { handler } = createAppendLogTool(taskService);
 
     const result = await handler({ task_id: 'T-001', message: 'did some work', client_id: 'mcp-abc' });
 
@@ -47,8 +58,11 @@ describe('createAppendLogTool', () => {
 
   it('uses mcp-anonymous when no client_id provided', async () => {
     const storage = makeStorage();
+    const roleService = new RoleService();
     const logService = new LogService(storage);
-    const { handler } = createAppendLogTool(logService);
+    const taskService = new TaskService(storage, logService, roleService);
+
+    const { handler } = createAppendLogTool(taskService);
 
     await handler({ task_id: 'T-001', message: 'note' });
 
@@ -61,8 +75,11 @@ describe('createAppendLogTool', () => {
 
   it('tool definition requires id and message', () => {
     const storage = makeStorage();
+    const roleService = new RoleService();
     const logService = new LogService(storage);
-    const { definition } = createAppendLogTool(logService);
+    const taskService = new TaskService(storage, logService, roleService);
+
+    const { definition } = createAppendLogTool(taskService);
 
     expect(definition.name).toBe('append_log');
     expect(definition.inputSchema.required).toContain('task_id');

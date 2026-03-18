@@ -1,6 +1,5 @@
 import type { Tool, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { TaskService } from '../tasks/task-service.js';
-import type { LogService } from '../logs/log-service.js';
 import type { StoryService } from '../story/story-service.js';
 import { extractAssignedToFromMarkdown, extractTypeFromMarkdown } from '../tasks/task-markdown.js';
 import { PermissionDeniedError, H2ABypassError } from '../shared/errors.js';
@@ -9,7 +8,6 @@ import type { RegisterToolResult } from './client-registration.js';
 
 export function createCompleteTaskTool(
   taskService: TaskService,
-  logService: LogService,
   storyService?: StoryService,
 ): RegisterToolResult {
   const definition: Tool = {
@@ -53,7 +51,7 @@ export function createCompleteTaskTool(
     }
 
     const agentId = clientId ?? 'mcp-anonymous';
-    await logService.appendLog(id, agentId, `completed: ${summary}`);
+    await taskService.appendTaskLog(id, agentId, `completed: ${summary}`);
     await taskService.updateStatus(id, 'done', agentId);
 
     try {

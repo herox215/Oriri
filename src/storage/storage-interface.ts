@@ -27,6 +27,16 @@ export interface StorageInterface {
   appendA2ALog(id: string, line: string): Promise<void>;
   readA2ALog(id: string): Promise<string>;
 
+  // Human Tasks (H2A)
+  readHumanTask(id: string): Promise<string>;
+  writeHumanTask(id: string, content: string): Promise<void>;
+  listHumanTasks(): Promise<string[]>;
+  deleteHumanTask(id: string): Promise<void>;
+
+  // Human Task Logs (append-only)
+  appendHumanTaskLog(id: string, line: string): Promise<void>;
+  readHumanTaskLog(id: string): Promise<string>;
+
   // Agents
   readActiveAgents(): Promise<string>;
   writeActiveAgents(content: string): Promise<void>;
