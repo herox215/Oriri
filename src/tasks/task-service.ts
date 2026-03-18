@@ -1,8 +1,8 @@
 import type { StorageInterface } from '../storage/storage-interface.js';
-import type { CreateTaskInput } from './task-types.js';
+import type { CreateTaskInput, TaskDetails, SearchTasksFilter } from './task-types.js';
 import { StorageReadError, TaskNotFoundError } from '../shared/errors.js';
 import { generateUniqueTaskId } from './task-id.js';
-import { buildTaskMarkdown, replaceStatusInMarkdown } from './task-markdown.js';
+import { buildTaskMarkdown, replaceStatusInMarkdown, parseTaskMarkdown } from './task-markdown.js';
 
 export class TaskService {
   constructor(private readonly storage: StorageInterface) {}
@@ -29,6 +29,7 @@ export class TaskService {
       status: 'open',
       createdAt,
       description: input.description,
+      complexity: input.complexity,
     });
 
     await this.storage.writeTask(id, markdown);
@@ -39,8 +40,38 @@ export class TaskService {
     return this.readTaskOrThrow(id);
   }
 
+  async getTaskDetails(id: string): Promise<TaskDetails> {
+    const markdown = await this.readTaskOrThrow(id);
+    return parseTaskMarkdown(id, markdown);
+  }
+
   async listTasks(): Promise<string[]> {
     return this.storage.listTasks();
+  }
+
+  async searchTasks(filter: SearchTasksFilter): Promise<TaskDetails[]> {
+    const ids = await this.storage.listTasks();
+    const results: TaskDetails[] = [];
+
+    for (const id of ids) {
+      try {
+        const details = await this.getTaskDetails(id);
+
+        if (filter.status != null && details.status !== filter.status) continue;
+        if (filter.complexity != null && details.complexity !== filter.complexity) continue;
+        if (
+          filter.query != null &&
+          !details.title.toLowerCase().includes(filter.query.toLowerCase())
+        )
+          continue;
+
+        results.push(details);
+      } catch {
+        // Skip unreadable tasks
+      }
+    }
+
+    return results;
   }
 
   async deleteTask(id: string): Promise<void> {

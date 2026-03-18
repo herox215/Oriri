@@ -56,3 +56,13 @@ export class TaskIdCollisionError extends OririError {
     this.name = 'TaskIdCollisionError';
   }
 }
+
+export class InvalidComplexityError extends OririError {
+  constructor(value: unknown) {
+    super(
+      `Invalid complexity: ${String(value)}. Must be one of 1, 2, 3, 5, 8, 13, 21`,
+      'INVALID_COMPLEXITY',
+    );
+    this.name = 'InvalidComplexityError';
+  }
+}

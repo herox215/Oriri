@@ -3,6 +3,8 @@ import {
   createCreateTaskTool,
   createDeleteTaskTool,
   createExecuteTaskTool,
+  createReadTaskTool,
+  createSearchTasksTool,
 } from '../mcp/index.js';
 import type { TaskService } from '../tasks/task-service.js';
 
@@ -13,6 +15,8 @@ export async function mcpServeCommand(taskService: TaskService): Promise<void> {
     createCreateTaskTool(taskService),
     createDeleteTaskTool(taskService),
     createExecuteTaskTool(taskService),
+    createReadTaskTool(taskService),
+    createSearchTasksTool(taskService),
   ];
 
   for (const { definition, handler } of tools) {

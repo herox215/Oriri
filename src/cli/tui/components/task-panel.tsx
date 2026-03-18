@@ -35,18 +35,21 @@ export function TaskPanel({ tasks, selectedIndex, focused }: TaskPanelProps): Re
         <Box flexDirection="column">
           <Text dimColor>
             {'  '}
-            {'ID'.padEnd(14)}
-            {'Title'.padEnd(34)}
+            {'ID'.padEnd(10)}
+            {'Title'.padEnd(28)}
+            {'Cplx'.padEnd(6)}
             {'Status'}
           </Text>
           {tasks.map((task, i) => {
             const isSelected = i === selectedIndex && focused;
             const color = statusColor(task.status);
+            const cplx = task.complexity != null ? String(task.complexity) : '-';
             return (
               <Text key={task.id} inverse={isSelected} color={color}>
                 {isSelected ? '> ' : '  '}
-                {task.id.slice(0, 13).padEnd(14)}
-                {task.title.slice(0, 33).padEnd(34)}
+                {task.id.slice(0, 9).padEnd(10)}
+                {task.title.slice(0, 27).padEnd(28)}
+                {cplx.padEnd(6)}
                 {task.status}
               </Text>
             );

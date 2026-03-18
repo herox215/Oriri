@@ -4,4 +4,5 @@ export interface TaskRow {
   id: string;
   title: string;
   status: TaskStatus;
+  complexity: number | null;
 }
