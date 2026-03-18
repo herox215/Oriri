@@ -1,6 +1,6 @@
-# Oriri — AI-First Ticketing System
+# Oriri — Simple Task Board
 
-A ticketing system built primarily for AI agents. Humans interact via a simple task list, not via tickets.
+A simple task board with CLI, TUI, and MCP interface.
 
 ## Tech-Stack
 
@@ -23,87 +23,64 @@ pnpm lint:fix       # ESLint + Prettier auto-fix
 
 ## Architecture
 
-### Extensibility as a Guiding Principle
-
-The architecture is designed to be extensible at every point without having to touch existing code. New storage backends, agent roles, A2A types, or MCP tools must be pluggable without modifying core modules.
-
-In concrete terms this means:
-
-- **Interfaces before implementations** — Core logic works against interfaces, never against concrete classes
-- **Adapter pattern for I/O** — Storage, transport, notifications are swappable adapters
-- **Registry pattern for extensions** — Roles, A2A types, tool sets are registered, not hardcoded
-- **No god object** — Clear module boundaries, each module has a single responsibility
-
 ### Dependency Injection
 
 Constructor Injection — Classes receive their dependencies as interfaces in the constructor. No DI framework, manual wiring in a composition root.
 
 ```typescript
-// Classes define their dependencies in the constructor
 class TaskService {
-  constructor(
-    private storage: StorageInterface,
-    private logger: LogService,
-  ) {}
+  constructor(private storage: StorageInterface) {}
 }
 
-// Composition root wires everything at startup
-function bootstrap(config: OririConfig) {
-  const storage = createStorageAdapter(config.mode);
-  const logger = new LogService(storage);
-  const tasks = new TaskService(storage, logger);
-  return { storage, logger, tasks };
+function bootstrap() {
+  const storage = new FilesystemStorage(basePath);
+  const tasks = new TaskService(storage);
+  return { storage, tasks };
 }
 ```
 
 ### StorageInterface — The Central Abstraction
 
-All file operations go through the `StorageInterface`. Never use `fs.*` directly (sole exception: Config-Loader, which reads `config.yaml` before storage is initialized).
-
-```
-Config-Loader (reads config.yaml directly from filesystem)
-       ↓
-  config.mode determines adapter
-       ↓
-  StorageInterface
-    ├── FilesystemStorage (mode: local)  ← MVP
-    └── WebSocketStorage  (mode: server) ← Post-MVP
-```
+All file operations go through the `StorageInterface` (4 methods: readTask, writeTask, listTasks, deleteTask). Never use `fs.*` directly (sole exception: Config-Loader, which reads `config.yaml` before storage is initialized).
 
 ### Data Format
 
-- Tasks, logs, story, A2A tasks are **Markdown files** — the AI interprets the content
+- Tasks are **Markdown files** with a metadata table (id, status, created_at) and description section
 - Only non-Markdown file: `.oriri/config.yaml` (YAML, machine-parsed)
-- StorageInterface works with **raw strings**, no structured objects
+- Task statuses: `open` | `done`
 
 ### Source Directory Structure
 
 ```
 src/
-  cli/              ← CLI entry points (init, agent-start, watch, etc.)
+  cli/              ← CLI entry points (init, do, delete, tui, mcp-serve)
   config/           ← Config-Loader (only module that uses fs.* directly)
-  storage/          ← StorageInterface + adapters (FilesystemStorage, etc.)
+  storage/          ← StorageInterface + FilesystemStorage adapter
   tasks/            ← Task data model, CRUD, ID generation
-  logs/             ← Append-only log system
-  agents/           ← Agent roles, registration, runner
-  a2a/              ← A2A coordination, consent system
-  story/            ← story.md read/write logic, archiving
-  mcp/              ← MCP server, tool definitions
-  notifications/    ← Notification watcher
-  shared/           ← Shared types, errors, utilities
+  mcp/              ← MCP server, 3 tool definitions
+  shared/           ← Shared types, errors, default content
 ```
+
+### CLI Commands
+
+- `oriri init` — Initialize `.oriri/` directory
+- `oriri do "TEXT"` — Create a new task
+- `oriri delete ID` — Delete a task
+- `oriri tui` — Interactive dashboard
+- `oriri mcp-serve` — Start MCP server (stdio)
+
+### MCP Tools
+
+- `create_task` — Create a new task (title, description)
+- `delete_task` — Delete a task (task_id)
+- `execute_task` — Mark a task as done (task_id)
 
 ### Runtime Directory Structure (.oriri/)
 
 ```
 .oriri/
-  config.yaml          ← Project configuration
-  story.md             ← Collective memory
-  story.archive.md     ← Archived story entries
-  rules.md             ← Consent rules
-  agents/active.md     ← Running agents (registry + kill switch)
-  human-tasks/         ← Task files (task-{id}.md, task-{id}.log.md)
-  agent-tasks/         ← A2A coordination (a2a-{id}.md)
+  config.yaml       ← Project configuration
+  tasks/            ← Task files (task-{id}.md)
 ```
 
 ## Coding Conventions
@@ -113,7 +90,6 @@ src/
 - Tests next to the code: `foo.ts` → `foo.test.ts`
 - No `any` types — if necessary, use `unknown` with type guard
 - Async/await instead of callbacks or .then() chains
-- Commit messages: Conventional Commits with ticket reference (`feat(tasks): add CRUD operations (T-004)`)
 
 ### Error Handling
 
@@ -129,7 +105,6 @@ class OririError extends Error {
   }
 }
 
-// Module-specific errors
 class TaskNotFoundError extends OririError {
   constructor(id: string) {
     super(`Task ${id} not found`, 'TASK_NOT_FOUND');
@@ -138,9 +113,3 @@ class TaskNotFoundError extends OririError {
 ```
 
 Throw errors early, never silently swallow them.
-
-## Implementation
-
-Order and details are in `TICKETS.md`. The dependency graph there is binding — implement tickets only in the specified order.
-
-Phase 1 (foundation) must be fully complete before Phase 2 begins. Within a phase, independent tickets can be implemented in parallel.

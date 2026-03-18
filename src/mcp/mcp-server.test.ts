@@ -3,7 +3,7 @@ import { McpServer } from './mcp-server.js';
 import { OririError } from '../shared/errors.js';
 
 describe('McpServer', () => {
-  it('registers and exposes tools for discovery', async () => {
+  it('registers and exposes tools for discovery', () => {
     const server = new McpServer();
 
     server.registerTool(
@@ -12,10 +12,9 @@ describe('McpServer', () => {
         description: 'A test tool',
         inputSchema: { type: 'object', properties: {} },
       },
-      async () => ({ content: [{ type: 'text', text: 'ok' }] }),
+      () => Promise.resolve({ content: [{ type: 'text' as const, text: 'ok' }] }),
     );
 
-    // Verify the tool is registered internally
     const registered = (server as unknown as { tools: Map<string, unknown> }).tools;
     expect(registered.has('test_tool')).toBe(true);
   });
@@ -25,11 +24,11 @@ describe('McpServer', () => {
 
     server.registerTool(
       { name: 'tool_a', description: 'Tool A', inputSchema: { type: 'object', properties: {} } },
-      async () => ({ content: [{ type: 'text', text: 'a' }] }),
+      () => Promise.resolve({ content: [{ type: 'text' as const, text: 'a' }] }),
     );
     server.registerTool(
       { name: 'tool_b', description: 'Tool B', inputSchema: { type: 'object', properties: {} } },
-      async () => ({ content: [{ type: 'text', text: 'b' }] }),
+      () => Promise.resolve({ content: [{ type: 'text' as const, text: 'b' }] }),
     );
 
     const registered = (server as unknown as { tools: Map<string, unknown> }).tools;
@@ -47,9 +46,7 @@ describe('McpServer', () => {
         description: 'Throws',
         inputSchema: { type: 'object', properties: {} },
       },
-      async () => {
-        throw new OririError('something went wrong', 'SOME_ERROR');
-      },
+      () => Promise.reject(new OririError('something went wrong', 'SOME_ERROR')),
     );
 
     const result = await server.callTool('failing_tool', {});

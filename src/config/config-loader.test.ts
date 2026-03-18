@@ -23,14 +23,11 @@ describe('loadConfig', () => {
     await writeFile(join(basePath, 'config.yaml'), content, 'utf-8');
   }
 
-  // Happy path
-
   describe('minimal config', () => {
     it('should parse mode-only config', async () => {
       await writeConfig('mode: local');
       const config = await loadConfig(basePath);
       expect(config.mode).toBe('local');
-      expect(config.provider).toBeUndefined();
     });
 
     it('should accept mode: server', async () => {
@@ -46,104 +43,6 @@ describe('loadConfig', () => {
     });
   });
 
-  describe('full config with providers', () => {
-    it('should parse providers with all fields', async () => {
-      await writeConfig(`
-mode: local
-provider:
-  - name: mistral
-    model: mistral-large-latest
-    key: sk-test-123
-  - name: anthropic
-    model: claude-sonnet-4-6
-    key: sk-ant-456
-`);
-      const config = await loadConfig(basePath);
-      expect(config.mode).toBe('local');
-      expect(config.provider).toHaveLength(2);
-
-      const providers = config.provider;
-      expect(providers).toBeDefined();
-
-      const mistral = providers?.[0];
-      expect(mistral?.name).toBe('mistral');
-      expect(mistral?.model).toBe('mistral-large-latest');
-      expect(mistral?.key).toBe('sk-test-123');
-
-      const anthropic = providers?.[1];
-      expect(anthropic?.name).toBe('anthropic');
-      expect(anthropic?.model).toBe('claude-sonnet-4-6');
-      expect(anthropic?.key).toBe('sk-ant-456');
-    });
-
-    it('should accept empty provider array', async () => {
-      await writeConfig('mode: local\nprovider: []');
-      const config = await loadConfig(basePath);
-      expect(config.provider).toEqual([]);
-    });
-  });
-
-  // Environment variable resolution
-
-  describe('environment variable resolution', () => {
-    const ENV_KEY = 'ORIRI_TEST_API_KEY';
-    const ENV_HOST = 'ORIRI_TEST_HOST';
-    const ENV_PORT = 'ORIRI_TEST_PORT';
-
-    afterEach(() => {
-      process.env[ENV_KEY] = undefined;
-      process.env[ENV_HOST] = undefined;
-      process.env[ENV_PORT] = undefined;
-    });
-
-    it('should resolve ${ENV_VAR} in string values', async () => {
-      process.env[ENV_KEY] = 'sk-resolved-key';
-      await writeConfig(`
-mode: local
-provider:
-  - name: mistral
-    model: mistral-large-latest
-    key: \${${ENV_KEY}}
-`);
-      const config = await loadConfig(basePath);
-      expect(config.provider?.[0]?.key).toBe('sk-resolved-key');
-    });
-
-    it('should resolve partial substitution in strings', async () => {
-      process.env[ENV_HOST] = 'localhost';
-      process.env[ENV_PORT] = '8080';
-      await writeConfig(`
-mode: local
-provider:
-  - name: custom
-    model: \${${ENV_HOST}}:\${${ENV_PORT}}
-    key: test-key
-`);
-      const config = await loadConfig(basePath);
-      expect(config.provider?.[0]?.model).toBe('localhost:8080');
-    });
-
-    it('should throw ConfigValidationError for undefined env var', async () => {
-      await writeConfig(`
-mode: local
-provider:
-  - name: mistral
-    model: mistral-large-latest
-    key: \${NONEXISTENT_VAR_12345}
-`);
-      await expect(loadConfig(basePath)).rejects.toThrow(ConfigValidationError);
-      await expect(loadConfig(basePath)).rejects.toThrow('NONEXISTENT_VAR_12345');
-    });
-
-    it('should not affect non-string values', async () => {
-      await writeConfig('mode: local');
-      const config = await loadConfig(basePath);
-      expect(config.mode).toBe('local');
-    });
-  });
-
-  // Mode validation
-
   describe('mode validation', () => {
     it('should throw on invalid mode', async () => {
       await writeConfig('mode: distributed');
@@ -152,33 +51,11 @@ provider:
     });
 
     it('should throw on missing mode', async () => {
-      await writeConfig('provider: []');
+      await writeConfig('something: else');
       await expect(loadConfig(basePath)).rejects.toThrow(ConfigValidationError);
       await expect(loadConfig(basePath)).rejects.toThrow('Missing required field: mode');
     });
   });
-
-  // Provider validation
-
-  describe('provider validation', () => {
-    it('should throw on missing required fields', async () => {
-      await writeConfig(`
-mode: local
-provider:
-  - name: mistral
-`);
-      await expect(loadConfig(basePath)).rejects.toThrow(ConfigValidationError);
-      await expect(loadConfig(basePath)).rejects.toThrow('provider[0]');
-    });
-
-    it('should throw on non-array provider', async () => {
-      await writeConfig('mode: local\nprovider: not-a-list');
-      await expect(loadConfig(basePath)).rejects.toThrow(ConfigValidationError);
-      await expect(loadConfig(basePath)).rejects.toThrow('provider must be a list');
-    });
-  });
-
-  // File errors
 
   describe('file errors', () => {
     it('should throw ConfigNotFoundError for missing config.yaml', async () => {
@@ -203,26 +80,11 @@ provider:
     });
   });
 
-  // Edge cases
-
   describe('edge cases', () => {
     it('should ignore unknown extra fields in config', async () => {
       await writeConfig('mode: local\nunknown_field: some_value');
       const config = await loadConfig(basePath);
       expect(config.mode).toBe('local');
-    });
-
-    it('should ignore unknown extra fields in provider entries', async () => {
-      await writeConfig(`
-mode: local
-provider:
-  - name: mistral
-    model: mistral-large-latest
-    key: test-key
-    extra_field: extra_value
-`);
-      const config = await loadConfig(basePath);
-      expect(config.provider?.[0]?.name).toBe('mistral');
     });
 
     it('should handle config with comments', async () => {

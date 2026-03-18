@@ -38,8 +38,8 @@ To save backups to a custom location, pass `--target`:
 oriri backup [--target <dir>]
 ```
 
-| Flag | Default | Description |
-|------|---------|-------------|
+| Flag             | Default            | Description                                  |
+| ---------------- | ------------------ | -------------------------------------------- |
 | `--target <dir>` | `./oriri-backups/` | Directory where backup snapshots are written |
 
 Each invocation creates a new subdirectory named `oriri-backup-<ISO-timestamp>` inside the target directory.

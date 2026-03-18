@@ -1,31 +1,11 @@
 import type { StorageInterface } from '../storage/storage-interface.js';
-import type { LogService } from '../logs/log-service.js';
-import type { RoleService } from '../agents/role-service.js';
-import type { AgentRole } from '../config/config-types.js';
-import type { TaskType } from './task-types.js';
-import { StorageReadError, TaskNotFoundError, TaskAlreadyClaimedError, TaskNotDraftError } from '../shared/errors.js';
-import type { CreateTaskInput, TaskStatus } from './task-types.js';
+import type { CreateTaskInput } from './task-types.js';
+import { StorageReadError, TaskNotFoundError } from '../shared/errors.js';
 import { generateUniqueTaskId } from './task-id.js';
-import {
-  buildTaskMarkdown,
-  clearAssignedToInMarkdown,
-  extractAssignedToFromMarkdown,
-  extractContextBundleFromMarkdown,
-  extractStatusFromMarkdown,
-  extractTypeFromMarkdown,
-  replaceAssignedToInMarkdown,
-  replaceContextBundleInMarkdown,
-  replaceDependenciesInMarkdown,
-  replaceStatusInMarkdown,
-  replaceTypeInMarkdown,
-} from './task-markdown.js';
+import { buildTaskMarkdown, replaceStatusInMarkdown } from './task-markdown.js';
 
 export class TaskService {
-  constructor(
-    private readonly storage: StorageInterface,
-    private readonly logService: LogService,
-    private readonly roleService: RoleService,
-  ) {}
+  constructor(private readonly storage: StorageInterface) {}
 
   private async readTaskOrThrow(id: string): Promise<string> {
     try {
@@ -40,23 +20,18 @@ export class TaskService {
 
   async createTask(input: CreateTaskInput): Promise<string> {
     const existingIds = await this.storage.listTasks();
-    const id = generateUniqueTaskId(input.createdBy, input.title, existingIds);
+    const id = generateUniqueTaskId(input.title, existingIds);
     const createdAt = new Date().toISOString();
 
     const markdown = buildTaskMarkdown({
       id,
       title: input.title,
-      type: input.type,
-      status: input.status ?? 'open',
-      createdBy: input.createdBy,
+      status: 'open',
       createdAt,
-      contextBundle: input.contextBundle,
-      dependencies: input.dependencies,
+      description: input.description,
     });
 
     await this.storage.writeTask(id, markdown);
-    await this.logService.appendLog(id, input.createdBy, `created task: ${input.title}`);
-
     return id;
   }
 
@@ -72,115 +47,9 @@ export class TaskService {
     await this.storage.deleteTask(id);
   }
 
-  async getTaskLog(id: string): Promise<string> {
-    await this.readTaskOrThrow(id);
-    return this.logService.getLog(id);
-  }
-
-  async appendTaskLog(id: string, agentId: string, message: string): Promise<void> {
-    await this.readTaskOrThrow(id);
-    await this.logService.appendLog(id, agentId, message);
-  }
-
-  async updateTaskContent(id: string, content: string): Promise<void> {
-    await this.readTaskOrThrow(id);
-    await this.storage.writeTask(id, content);
-  }
-
-  async claimTask(id: string, agentId: string, role: AgentRole): Promise<void> {
+  async completeTask(id: string): Promise<void> {
     const markdown = await this.readTaskOrThrow(id);
-
-    const taskType = extractTypeFromMarkdown(markdown) as TaskType | null;
-    const currentStatus = extractStatusFromMarkdown(markdown) as TaskStatus | null;
-
-    if (!taskType || !currentStatus) {
-      throw new TaskNotFoundError(id);
-    }
-
-    const assignedTo = extractAssignedToFromMarkdown(markdown);
-    if (assignedTo !== null && assignedTo !== '—') {
-      throw new TaskAlreadyClaimedError(id, assignedTo);
-    }
-
-    this.roleService.checkCanClaimTask(role, taskType, currentStatus);
-
-    let updated = replaceStatusInMarkdown(markdown, 'planning');
-    updated = replaceAssignedToInMarkdown(updated, agentId);
-
+    const updated = replaceStatusInMarkdown(markdown, 'done');
     await this.storage.writeTask(id, updated);
-    await this.logService.appendLog(
-      id,
-      agentId,
-      `claimed task, status: ${currentStatus} → planning`,
-    );
-  }
-
-  async setDependencies(id: string, dependencies: string[], agentId: string): Promise<void> {
-    const markdown = await this.readTaskOrThrow(id);
-    const updated = replaceDependenciesInMarkdown(markdown, dependencies);
-    await this.storage.writeTask(id, updated);
-    await this.logService.appendLog(
-      id,
-      agentId,
-      `dependencies set: ${dependencies.length > 0 ? dependencies.join(', ') : 'none'}`,
-    );
-  }
-
-  async refineTask(
-    id: string,
-    agentId: string,
-    options?: { type?: TaskType | undefined; contextBundle?: string | undefined },
-  ): Promise<{ targetStatus: TaskStatus }> {
-    const markdown = await this.readTaskOrThrow(id);
-    const currentStatus = extractStatusFromMarkdown(markdown);
-
-    if (currentStatus !== 'draft') {
-      throw new TaskNotDraftError(id, currentStatus ?? 'unknown');
-    }
-
-    const effectiveType = options?.type ?? extractTypeFromMarkdown(markdown);
-    const targetStatus: TaskStatus = effectiveType === 'escalation' ? 'needs_human' : 'open';
-
-    let updated = markdown;
-    if (options?.type) {
-      updated = replaceTypeInMarkdown(updated, options.type);
-    }
-    if (options?.contextBundle) {
-      updated = replaceContextBundleInMarkdown(updated, options.contextBundle);
-    }
-    updated = replaceStatusInMarkdown(updated, targetStatus);
-
-    await this.storage.writeTask(id, updated);
-    await this.logService.appendLog(id, agentId, `refined task: draft → ${targetStatus}`);
-
-    return { targetStatus };
-  }
-
-  async handleHumanInput(id: string, text: string): Promise<void> {
-    const markdown = await this.readTaskOrThrow(id);
-    const existingContext = extractContextBundleFromMarkdown(markdown);
-    const appendedContext = existingContext
-      ? `${existingContext}\n\n### Human Input\n\n${text}`
-      : `### Human Input\n\n${text}`;
-
-    let updated = replaceContextBundleInMarkdown(markdown, appendedContext);
-    updated = replaceStatusInMarkdown(updated, 'open');
-    updated = clearAssignedToInMarkdown(updated);
-
-    await this.storage.writeTask(id, updated);
-    await this.logService.appendLog(id, 'human', `human input: ${text}`);
-  }
-
-  async updateStatus(id: string, newStatus: TaskStatus, agentId: string): Promise<void> {
-    const markdown = await this.readTaskOrThrow(id);
-    const currentStatus = extractStatusFromMarkdown(markdown);
-    const updated = replaceStatusInMarkdown(markdown, newStatus);
-
-    await this.storage.writeTask(id, updated);
-    await this.logService.appendLog(
-      id,
-      agentId,
-      `status: ${currentStatus ?? 'unknown'} → ${newStatus}`,
-    );
   }
 }

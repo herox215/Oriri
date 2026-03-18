@@ -4,7 +4,6 @@ import type { TaskRow } from '../types.js';
 import type { TaskStatus } from '../../../tasks/task-types.js';
 import {
   extractStatusFromMarkdown,
-  extractAssignedToFromMarkdown,
   extractTitleFromMarkdown,
 } from '../../../tasks/task-markdown.js';
 
@@ -24,7 +23,6 @@ export function useTasks(taskService: TaskService): TaskRow[] {
             id,
             title: extractTitleFromMarkdown(md) ?? id,
             status: (extractStatusFromMarkdown(md) ?? 'open') as TaskStatus,
-            assignedTo: extractAssignedToFromMarkdown(md) ?? '—',
           });
         } catch {
           // Skip unreadable tasks
@@ -38,10 +36,10 @@ export function useTasks(taskService: TaskService): TaskRow[] {
 
   useEffect(() => {
     void poll();
-    const timer = setInterval(() => {
+    const timer = setInterval((): void => {
       void poll();
     }, POLL_INTERVAL_MS);
-    return () => {
+    return (): void => {
       clearInterval(timer);
     };
   }, [poll]);

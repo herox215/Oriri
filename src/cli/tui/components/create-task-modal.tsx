@@ -18,13 +18,7 @@ export function CreateTaskModal({ onSubmit, onCancel }: CreateTaskModalProps): R
   });
 
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="round"
-      borderColor="green"
-      paddingX={1}
-      marginX={2}
-    >
+    <Box flexDirection="column" borderStyle="round" borderColor="green" paddingX={1} marginX={2}>
       <Text bold color="green">
         New Task
       </Text>
@@ -41,7 +35,7 @@ export function CreateTaskModal({ onSubmit, onCancel }: CreateTaskModalProps): R
         />
       </Box>
       <Box marginTop={1}>
-        <Text dimColor>Enter:submit  Esc:cancel</Text>
+        <Text dimColor>Enter:submit Esc:cancel</Text>
       </Box>
     </Box>
   );

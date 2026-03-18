@@ -1,13 +1,7 @@
 import { mkdir, writeFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import { InitError } from '../shared/errors.js';
-import {
-  CONFIG_YAML,
-  STORY_MD,
-  STORY_ARCHIVE_MD,
-  RULES_MD,
-  ACTIVE_AGENTS_MD,
-} from '../shared/default-content.js';
+import { CONFIG_YAML } from '../shared/default-content.js';
 
 export async function initCommand(options: { force: boolean; cwd?: string }): Promise<void> {
   const baseDir = join(options.cwd ?? process.cwd(), '.oriri');
@@ -24,21 +18,9 @@ export async function initCommand(options: { force: boolean; cwd?: string }): Pr
     console.log('Warning: .oriri/ already exists. Reinitializing with --force.');
   }
 
-  await mkdir(join(baseDir, 'human-tasks'), { recursive: true });
-  await mkdir(join(baseDir, 'agent-tasks'), { recursive: true });
-  await mkdir(join(baseDir, 'agents'), { recursive: true });
+  await mkdir(join(baseDir, 'tasks'), { recursive: true });
 
-  const files: Array<[string, string]> = [
-    ['config.yaml', CONFIG_YAML],
-    ['story.md', STORY_MD],
-    ['story.archive.md', STORY_ARCHIVE_MD],
-    ['rules.md', RULES_MD],
-    [join('agents', 'active.md'), ACTIVE_AGENTS_MD],
-  ];
-
-  for (const [relativePath, content] of files) {
-    await writeFile(join(baseDir, relativePath), content, 'utf-8');
-  }
+  await writeFile(join(baseDir, 'config.yaml'), CONFIG_YAML, 'utf-8');
 
   console.log('Initialized Oriri in .oriri/');
 }

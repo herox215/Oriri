@@ -13,13 +13,8 @@ function statusColor(status: TaskStatus): string | undefined {
   switch (status) {
     case 'done':
       return 'green';
-    case 'executing':
-    case 'planning':
+    case 'open':
       return 'yellow';
-    case 'needs_human':
-      return 'red';
-    case 'draft':
-      return 'gray';
     default:
       return undefined;
   }
@@ -41,9 +36,8 @@ export function TaskPanel({ tasks, selectedIndex, focused }: TaskPanelProps): Re
           <Text dimColor>
             {'  '}
             {'ID'.padEnd(14)}
-            {'Title'.padEnd(28)}
-            {'Status'.padEnd(18)}
-            {'Assignee'}
+            {'Title'.padEnd(34)}
+            {'Status'}
           </Text>
           {tasks.map((task, i) => {
             const isSelected = i === selectedIndex && focused;
@@ -52,9 +46,8 @@ export function TaskPanel({ tasks, selectedIndex, focused }: TaskPanelProps): Re
               <Text key={task.id} inverse={isSelected} color={color}>
                 {isSelected ? '> ' : '  '}
                 {task.id.slice(0, 13).padEnd(14)}
-                {task.title.slice(0, 27).padEnd(28)}
-                {task.status.padEnd(18)}
-                {task.assignedTo}
+                {task.title.slice(0, 33).padEnd(34)}
+                {task.status}
               </Text>
             );
           })}

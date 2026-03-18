@@ -6,7 +6,7 @@
 
 Jira, Linear, Trello — they're all built for humans. When AI agents use them, they're fighting a system designed around story points, sprint boards, and drag-and-drop.
 
-**Oriri flips this.** It's a ticketing system designed *primarily* for AI agents, where:
+**Oriri flips this.** It's a ticketing system designed _primarily_ for AI agents, where:
 
 - Tasks are **Markdown files** that AI reads natively
 - Coordination happens through **structured protocols**, not UI

@@ -16,20 +16,14 @@ describe('initCommand', () => {
     await rm(testDir, { recursive: true, force: true });
   });
 
-  it('should create the complete directory structure', async () => {
+  it('should create the directory structure', async () => {
     await initCommand({ force: false, cwd: testDir });
 
     const base = join(testDir, '.oriri');
     const entries = await readdir(base, { recursive: true });
 
     expect(entries).toContain('config.yaml');
-    expect(entries).toContain('story.md');
-    expect(entries).toContain('story.archive.md');
-    expect(entries).toContain('rules.md');
-    expect(entries).toContain(join('agents', 'active.md'));
-    expect(entries).toContain('human-tasks');
-    expect(entries).toContain('agent-tasks');
-    expect(entries).toContain('agents');
+    expect(entries).toContain('tasks');
   });
 
   it('should write config.yaml with mode: local', async () => {
@@ -39,60 +33,20 @@ describe('initCommand', () => {
     expect(content).toContain('mode: local');
   });
 
-  it('should write story.md with header', async () => {
+  it('should create empty tasks/ directory', async () => {
     await initCommand({ force: false, cwd: testDir });
 
-    const content = await readFile(join(testDir, '.oriri', 'story.md'), 'utf-8');
-    expect(content).toMatch(/^# Story/);
-  });
-
-  it('should write story.archive.md with header', async () => {
-    await initCommand({ force: false, cwd: testDir });
-
-    const content = await readFile(join(testDir, '.oriri', 'story.archive.md'), 'utf-8');
-    expect(content).toMatch(/^# Story Archive/);
-  });
-
-  it('should write rules.md with majority >50% rule', async () => {
-    await initCommand({ force: false, cwd: testDir });
-
-    const content = await readFile(join(testDir, '.oriri', 'rules.md'), 'utf-8');
-    expect(content).toContain('>50%');
-    expect(content).toContain('Unanimous');
-    expect(content).toContain('human approval');
-  });
-
-  it('should write agents/active.md with table header', async () => {
-    await initCommand({ force: false, cwd: testDir });
-
-    const content = await readFile(join(testDir, '.oriri', 'agents', 'active.md'), 'utf-8');
-    expect(content).toContain('# Active Agents');
-    expect(content).toContain('| ID |');
-  });
-
-  it('should create empty human-tasks/ directory', async () => {
-    await initCommand({ force: false, cwd: testDir });
-
-    const entries = await readdir(join(testDir, '.oriri', 'human-tasks'));
-    expect(entries).toHaveLength(0);
-  });
-
-  it('should create empty agent-tasks/ directory', async () => {
-    await initCommand({ force: false, cwd: testDir });
-
-    const entries = await readdir(join(testDir, '.oriri', 'agent-tasks'));
+    const entries = await readdir(join(testDir, '.oriri', 'tasks'));
     expect(entries).toHaveLength(0);
   });
 
   it('should throw InitError if .oriri/ already exists without --force', async () => {
     await initCommand({ force: false, cwd: testDir });
-
     await expect(initCommand({ force: false, cwd: testDir })).rejects.toThrow(InitError);
   });
 
   it('should include --force hint in error message', async () => {
     await initCommand({ force: false, cwd: testDir });
-
     await expect(initCommand({ force: false, cwd: testDir })).rejects.toThrow('--force');
   });
 
