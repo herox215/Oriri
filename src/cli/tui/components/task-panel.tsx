@@ -13,6 +13,8 @@ function statusColor(status: TaskStatus): string | undefined {
   switch (status) {
     case 'done':
       return 'green';
+    case 'in_progress':
+      return 'cyan';
     case 'open':
       return 'yellow';
     default:

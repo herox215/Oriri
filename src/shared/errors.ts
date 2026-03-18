@@ -66,3 +66,38 @@ export class InvalidComplexityError extends OririError {
     this.name = 'InvalidComplexityError';
   }
 }
+
+export class GitNotAvailableError extends OririError {
+  constructor() {
+    super('Git is not available or this is not a git repository', 'GIT_NOT_AVAILABLE');
+    this.name = 'GitNotAvailableError';
+  }
+}
+
+export class WorktreeError extends OririError {
+  constructor(message: string) {
+    super(message, 'WORKTREE_ERROR');
+    this.name = 'WorktreeError';
+  }
+}
+
+export class MergeConflictError extends OririError {
+  constructor(public readonly conflictFiles: string[]) {
+    super(`Merge conflict in files: ${conflictFiles.join(', ')}`, 'MERGE_CONFLICT');
+    this.name = 'MergeConflictError';
+  }
+}
+
+export class TaskAlreadyStartedError extends OririError {
+  constructor(id: string) {
+    super(`Task ${id} is already in progress`, 'TASK_ALREADY_STARTED');
+    this.name = 'TaskAlreadyStartedError';
+  }
+}
+
+export class UncommittedChangesError extends OririError {
+  constructor() {
+    super('There are uncommitted changes in the working directory', 'UNCOMMITTED_CHANGES');
+    this.name = 'UncommittedChangesError';
+  }
+}

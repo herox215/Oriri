@@ -3,6 +3,7 @@ import { OririError } from '../shared/errors.js';
 import { loadConfig } from '../config/config-loader.js';
 import { FilesystemStorage } from '../storage/filesystem-storage.js';
 import { TaskService } from '../tasks/task-service.js';
+import { GitService, WorktreeManager } from '../git/index.js';
 import { initCommand } from './init.js';
 import { doCommand } from './do.js';
 import { deleteCommand } from './delete.js';
@@ -67,7 +68,10 @@ async function main(): Promise<void> {
     }
     case 'mcp-serve': {
       const taskService = await bootstrap();
-      await mcpServeCommand(taskService);
+      const projectRoot = process.cwd();
+      const gitService = new GitService(projectRoot);
+      const worktreeManager = new WorktreeManager(gitService, taskService, projectRoot);
+      await mcpServeCommand(taskService, worktreeManager);
       break;
     }
     case 'help':

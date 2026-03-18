@@ -7,6 +7,8 @@ export interface TaskMarkdownFields {
   createdAt: string;
   description?: string;
   complexity?: number;
+  branch?: string;
+  worktreePath?: string;
 }
 
 export function buildTaskMarkdown(fields: TaskMarkdownFields): string {
@@ -14,6 +16,9 @@ export function buildTaskMarkdown(fields: TaskMarkdownFields): string {
 
   const complexityRow =
     fields.complexity != null ? `| complexity | ${String(fields.complexity)} |\n` : '';
+  const branchRow = fields.branch != null ? `| branch | ${fields.branch} |\n` : '';
+  const worktreeRow =
+    fields.worktreePath != null ? `| worktree_path | ${fields.worktreePath} |\n` : '';
 
   return `# ${fields.title}
 
@@ -22,7 +27,7 @@ export function buildTaskMarkdown(fields: TaskMarkdownFields): string {
 | id | ${fields.id} |
 | status | ${fields.status} |
 | created_at | ${fields.createdAt} |
-${complexityRow}
+${complexityRow}${branchRow}${worktreeRow}
 ## Description
 
 ${description}
@@ -53,12 +58,40 @@ export function extractComplexityFromMarkdown(markdown: string): number | null {
   return match ? Number(match[1]) : null;
 }
 
+export function extractBranchFromMarkdown(markdown: string): string | null {
+  const match = /\| branch \| (.+?) \|/.exec(markdown);
+  return match?.[1]?.trim() ?? null;
+}
+
+export function extractWorktreePathFromMarkdown(markdown: string): string | null {
+  const match = /\| worktree_path \| (.+?) \|/.exec(markdown);
+  return match?.[1]?.trim() ?? null;
+}
+
+export function replaceFieldInMarkdown(markdown: string, field: string, value: string): string {
+  const regex = new RegExp(`(\\| ${field} \\| ).+? \\|`);
+  return markdown.replace(regex, `$1${value} |`);
+}
+
+export function addFieldToMarkdown(markdown: string, field: string, value: string): string {
+  const tableEnd = /(\n\n## Description)/;
+  return markdown.replace(tableEnd, `| ${field} | ${value} |\n$1`);
+}
+
+export function removeFieldFromMarkdown(markdown: string, field: string): string {
+  const regex = new RegExp(`\\| ${field} \\| .+? \\|\\n`, 'g');
+  return markdown.replace(regex, '');
+}
+
 export function extractCreatedAtFromMarkdown(markdown: string): string | null {
   const match = /\| created_at \| (\S+)/.exec(markdown);
   return match?.[1] ?? null;
 }
 
 export function parseTaskMarkdown(id: string, markdown: string): TaskDetails {
+  const branch = extractBranchFromMarkdown(markdown) ?? undefined;
+  const worktreePath = extractWorktreePathFromMarkdown(markdown) ?? undefined;
+
   return {
     id,
     title: extractTitleFromMarkdown(markdown) ?? id,
@@ -66,5 +99,7 @@ export function parseTaskMarkdown(id: string, markdown: string): TaskDetails {
     createdAt: extractCreatedAtFromMarkdown(markdown) ?? '',
     description: extractDescriptionFromMarkdown(markdown),
     complexity: extractComplexityFromMarkdown(markdown),
+    ...(branch != null && { branch }),
+    ...(worktreePath != null && { worktreePath }),
   };
 }

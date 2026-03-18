@@ -1,6 +1,6 @@
-export type TaskStatus = 'open' | 'done';
+export type TaskStatus = 'open' | 'in_progress' | 'done';
 
-export const TASK_STATUSES: readonly TaskStatus[] = ['open', 'done'] as const;
+export const TASK_STATUSES: readonly TaskStatus[] = ['open', 'in_progress', 'done'] as const;
 
 export const FIBONACCI_COMPLEXITIES = [1, 2, 3, 5, 8, 13, 21] as const;
 
@@ -23,6 +23,8 @@ export interface TaskDetails {
   createdAt: string;
   description: string;
   complexity: number | null;
+  branch?: string;
+  worktreePath?: string;
 }
 
 export interface SearchTasksFilter {

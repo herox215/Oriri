@@ -5,3 +5,5 @@ export { createDeleteTaskTool } from './delete-task-tool.js';
 export { createExecuteTaskTool } from './execute-task-tool.js';
 export { createReadTaskTool } from './read-task-tool.js';
 export { createSearchTasksTool } from './search-tasks-tool.js';
+export { createStartTaskTool } from './start-task-tool.js';
+export { createFinishTaskTool } from './finish-task-tool.js';

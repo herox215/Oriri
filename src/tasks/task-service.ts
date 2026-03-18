@@ -2,7 +2,13 @@ import type { StorageInterface } from '../storage/storage-interface.js';
 import type { CreateTaskInput, TaskDetails, SearchTasksFilter } from './task-types.js';
 import { StorageReadError, TaskNotFoundError } from '../shared/errors.js';
 import { generateUniqueTaskId } from './task-id.js';
-import { buildTaskMarkdown, replaceStatusInMarkdown, parseTaskMarkdown } from './task-markdown.js';
+import {
+  buildTaskMarkdown,
+  replaceStatusInMarkdown,
+  parseTaskMarkdown,
+  addFieldToMarkdown,
+  removeFieldFromMarkdown,
+} from './task-markdown.js';
 
 export class TaskService {
   constructor(private readonly storage: StorageInterface) {}
@@ -78,9 +84,19 @@ export class TaskService {
     await this.storage.deleteTask(id);
   }
 
+  async startTask(id: string, branch: string, worktreePath: string): Promise<void> {
+    let markdown = await this.readTaskOrThrow(id);
+    markdown = replaceStatusInMarkdown(markdown, 'in_progress');
+    markdown = addFieldToMarkdown(markdown, 'branch', branch);
+    markdown = addFieldToMarkdown(markdown, 'worktree_path', worktreePath);
+    await this.storage.writeTask(id, markdown);
+  }
+
   async completeTask(id: string): Promise<void> {
-    const markdown = await this.readTaskOrThrow(id);
-    const updated = replaceStatusInMarkdown(markdown, 'done');
-    await this.storage.writeTask(id, updated);
+    let markdown = await this.readTaskOrThrow(id);
+    markdown = replaceStatusInMarkdown(markdown, 'done');
+    markdown = removeFieldFromMarkdown(markdown, 'branch');
+    markdown = removeFieldFromMarkdown(markdown, 'worktree_path');
+    await this.storage.writeTask(id, markdown);
   }
 }
