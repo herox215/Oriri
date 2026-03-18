@@ -18,7 +18,7 @@ export async function doCommand(request: string, options?: { cwd?: string }): Pr
 
   const id = await taskService.createTask({
     title: request,
-    type: 'chore',
+    type: 'h2a',
     createdBy: 'cli',
     status: 'open',
     contextBundle,

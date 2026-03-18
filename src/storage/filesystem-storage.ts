@@ -11,11 +11,11 @@ export class FilesystemStorage implements StorageInterface {
   constructor(private readonly basePath: string) {}
 
   private taskPath(id: string): string {
-    return join(this.basePath, 'tasks', `task-${id}.md`);
+    return join(this.basePath, 'human-tasks', `task-${id}.md`);
   }
 
   private logPath(taskId: string): string {
-    return join(this.basePath, 'tasks', `task-${taskId}.log.md`);
+    return join(this.basePath, 'human-tasks', `task-${taskId}.log.md`);
   }
 
   private a2aPath(id: string): string {
@@ -24,14 +24,6 @@ export class FilesystemStorage implements StorageInterface {
 
   private a2aLogPath(id: string): string {
     return join(this.basePath, 'agent-tasks', `a2a-${id}.log.md`);
-  }
-
-  private humanTaskPath(id: string): string {
-    return join(this.basePath, 'human-tasks', `task-${id}.md`);
-  }
-
-  private humanTaskLogPath(id: string): string {
-    return join(this.basePath, 'human-tasks', `task-${id}.log.md`);
   }
 
   private storyPath(): string {
@@ -64,15 +56,22 @@ export class FilesystemStorage implements StorageInterface {
   }
 
   async listTasks(): Promise<string[]> {
-    const files = await readdir(join(this.basePath, 'tasks'));
-    const taskPattern = /^task-(.+)\.md$/;
-    return files
-      .filter((f) => taskPattern.test(f) && !f.includes('.log.'))
-      .map((f) => {
-        const match = taskPattern.exec(f);
-        return match?.[1];
-      })
-      .filter((id): id is string => id !== undefined);
+    try {
+      const files = await readdir(join(this.basePath, 'human-tasks'));
+      const taskPattern = /^task-(.+)\.md$/;
+      return files
+        .filter((f) => taskPattern.test(f) && !f.includes('.log.'))
+        .map((f) => {
+          const match = taskPattern.exec(f);
+          return match?.[1];
+        })
+        .filter((id): id is string => id !== undefined);
+    } catch (error: unknown) {
+      if (isNodeError(error) && error.code === 'ENOENT') {
+        return [];
+      }
+      throw error;
+    }
   }
 
   async deleteTask(id: string): Promise<void> {
@@ -163,59 +162,6 @@ export class FilesystemStorage implements StorageInterface {
         return match?.[1];
       })
       .filter((id): id is string => id !== undefined);
-  }
-
-  // Human Tasks (H2A)
-
-  async readHumanTask(id: string): Promise<string> {
-    return this.readFileOrThrow(this.humanTaskPath(id), `H2A ${id}`);
-  }
-
-  async writeHumanTask(id: string, content: string): Promise<void> {
-    await writeFile(this.humanTaskPath(id), content, 'utf-8');
-  }
-
-  async listHumanTasks(): Promise<string[]> {
-    try {
-      const files = await readdir(join(this.basePath, 'human-tasks'));
-      const taskPattern = /^task-(.+)\.md$/;
-      return files
-        .filter((f) => taskPattern.test(f) && !f.includes('.log.'))
-        .map((f) => {
-          const match = taskPattern.exec(f);
-          return match?.[1];
-        })
-        .filter((id): id is string => id !== undefined);
-    } catch (error: unknown) {
-      if (isNodeError(error) && error.code === 'ENOENT') {
-        return [];
-      }
-      throw error;
-    }
-  }
-
-  async deleteHumanTask(id: string): Promise<void> {
-    try {
-      await unlink(this.humanTaskPath(id));
-    } catch (error: unknown) {
-      if (isNodeError(error) && error.code === 'ENOENT') {
-        return;
-      }
-      throw error;
-    }
-  }
-
-  async appendHumanTaskLog(id: string, line: string): Promise<void> {
-    await appendFile(this.humanTaskLogPath(id), line + '\n', 'utf-8');
-  }
-
-  async readHumanTaskLog(id: string): Promise<string> {
-    try {
-      return await readFile(this.humanTaskLogPath(id), 'utf-8');
-    } catch (error: unknown) {
-      if (isNodeError(error) && error.code === 'ENOENT') return '';
-      throw error;
-    }
   }
 
   // Agents

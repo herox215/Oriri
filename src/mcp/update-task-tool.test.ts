@@ -39,12 +39,6 @@ function makeStorage(taskMap: Record<string, string> = {}): StorageInterface {
     listA2A: vi.fn(),
     appendA2ALog: vi.fn(),
     readA2ALog: vi.fn(),
-    readHumanTask: vi.fn((id: string) => Promise.reject(new StorageReadError(`H2A ${id}`))),
-    writeHumanTask: vi.fn(),
-    listHumanTasks: vi.fn().mockResolvedValue([]),
-    deleteHumanTask: vi.fn(),
-    appendHumanTaskLog: vi.fn(),
-    readHumanTaskLog: vi.fn().mockResolvedValue(''),
   } as unknown as StorageInterface;
 }
 

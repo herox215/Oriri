@@ -27,7 +27,7 @@ describe('initCommand', () => {
     expect(entries).toContain('story.archive.md');
     expect(entries).toContain('rules.md');
     expect(entries).toContain(join('agents', 'active.md'));
-    expect(entries).toContain('tasks');
+    expect(entries).toContain('human-tasks');
     expect(entries).toContain('agent-tasks');
     expect(entries).toContain('agents');
   });
@@ -70,10 +70,10 @@ describe('initCommand', () => {
     expect(content).toContain('| ID |');
   });
 
-  it('should create empty tasks/ directory', async () => {
+  it('should create empty human-tasks/ directory', async () => {
     await initCommand({ force: false, cwd: testDir });
 
-    const entries = await readdir(join(testDir, '.oriri', 'tasks'));
+    const entries = await readdir(join(testDir, '.oriri', 'human-tasks'));
     expect(entries).toHaveLength(0);
   });
 

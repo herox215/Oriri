@@ -25,12 +25,6 @@ function makeStorage(): StorageInterface {
     listA2A: vi.fn(),
     appendA2ALog: vi.fn(),
     readA2ALog: vi.fn(),
-    readHumanTask: vi.fn(),
-    writeHumanTask: vi.fn(),
-    listHumanTasks: vi.fn().mockResolvedValue([]),
-    deleteHumanTask: vi.fn(),
-    appendHumanTaskLog: vi.fn(),
-    readHumanTaskLog: vi.fn().mockResolvedValue(''),
   } as unknown as StorageInterface;
 }
 

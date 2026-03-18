@@ -21,4 +21,4 @@ export { createRecoverTaskTool } from './recover-task-tool.js';
 export { createSetDependenciesTool } from './set-dependencies-tool.js';
 export { createAppendStoryTool } from './append-story-tool.js';
 export { createRefineTaskTool } from './refine-task-tool.js';
-export { createExecuteH2ATool } from './execute-h2a-tool.js';
+export { createDeleteTaskTool } from './delete-task-tool.js';

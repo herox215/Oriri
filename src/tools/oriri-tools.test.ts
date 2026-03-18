@@ -71,6 +71,8 @@ describe('createOririTools', () => {
       'resolve_a2a',
       'list_a2a',
       'refine_task',
+      'delete_task',
+      'request_human_gate',
       'check_consent',
     ]);
   });
@@ -237,6 +239,83 @@ describe('createOririTools', () => {
 
       expect(result.isError).toBe(true);
       expect(result.content).toContain('not a draft');
+    });
+  });
+
+  describe('delete_task', () => {
+    it('Phase 1: flags task for human approval when no ### Human Input', async () => {
+      const tool = findTool(tools, 'delete_task');
+      const result = await tool.handler({ task_id: 'abc12345' });
+
+      expect(result.isError).toBeUndefined();
+      expect(result.content).toContain('flagged for human approval');
+      expect(deps.taskService.updateStatus).toHaveBeenCalledWith(
+        'abc12345',
+        'needs_human',
+        'agent-alpha',
+      );
+    });
+
+    it('Phase 2: deletes task when ### Human Input is present', async () => {
+      (deps.taskService.readTask as ReturnType<typeof vi.fn>).mockResolvedValue(
+        '# Task\n\n| Field | Value |\n|-------|-------|\n| id | abc12345 |\n\n## Context\n\nSome context\n\n### Human Input\n\nApproved',
+      );
+      (deps.taskService as unknown as Record<string, ReturnType<typeof vi.fn>>).deleteTask =
+        vi.fn().mockResolvedValue(undefined);
+
+      tools = createOririTools(deps);
+      const tool = findTool(tools, 'delete_task');
+      const result = await tool.handler({ task_id: 'abc12345' });
+
+      expect(result.isError).toBeUndefined();
+      expect(result.content).toContain('deleted');
+      expect(
+        (deps.taskService as unknown as Record<string, ReturnType<typeof vi.fn>>).deleteTask,
+      ).toHaveBeenCalledWith('abc12345');
+    });
+
+    it('should return error on failure', async () => {
+      (deps.taskService.readTask as ReturnType<typeof vi.fn>).mockRejectedValue(
+        new Error('Task not found'),
+      );
+      tools = createOririTools(deps);
+      const tool = findTool(tools, 'delete_task');
+      const result = await tool.handler({ task_id: 'nonexistent' });
+
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain('Task not found');
+    });
+  });
+
+  describe('request_human_gate', () => {
+    it('should flag task for human review', async () => {
+      const tool = findTool(tools, 'request_human_gate');
+      const result = await tool.handler({ task_id: 'abc12345', reason: 'Needs review' });
+
+      expect(result.isError).toBeUndefined();
+      expect(result.content).toContain('flagged for human review');
+      expect(deps.logService.appendLog).toHaveBeenCalledWith(
+        'abc12345',
+        'agent-alpha',
+        'human gate requested: Needs review',
+      );
+      expect(deps.taskService.updateStatus).toHaveBeenCalledWith(
+        'abc12345',
+        'needs_human',
+        'agent-alpha',
+      );
+    });
+
+    it('should return error on failure', async () => {
+      (deps.taskService.updateStatus as ReturnType<typeof vi.fn>).mockRejectedValue(
+        new Error('Update failed'),
+      );
+      tools = createOririTools(deps);
+      const tool = findTool(tools, 'request_human_gate');
+      const result = await tool.handler({ task_id: 'abc12345', reason: 'test' });
+
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain('Update failed');
     });
   });
 

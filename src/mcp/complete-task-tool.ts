@@ -1,8 +1,8 @@
 import type { Tool, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { TaskService } from '../tasks/task-service.js';
 import type { StoryService } from '../story/story-service.js';
-import { extractAssignedToFromMarkdown, extractTypeFromMarkdown } from '../tasks/task-markdown.js';
-import { PermissionDeniedError, H2ABypassError } from '../shared/errors.js';
+import { extractAssignedToFromMarkdown } from '../tasks/task-markdown.js';
+import { PermissionDeniedError } from '../shared/errors.js';
 import type { ToolHandler } from './mcp-server.js';
 import type { RegisterToolResult } from './client-registration.js';
 
@@ -34,11 +34,6 @@ export function createCompleteTaskTool(
     const clientId = typeof args.client_id === 'string' ? args.client_id : undefined;
 
     const taskMarkdown = await taskService.readTask(id);
-
-    const taskType = extractTypeFromMarkdown(taskMarkdown);
-    if (taskType === 'h2a') {
-      throw new H2ABypassError(id);
-    }
 
     const assignedTo = extractAssignedToFromMarkdown(taskMarkdown);
 

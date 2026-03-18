@@ -102,8 +102,7 @@ src/
   story.archive.md     ← Archived story entries
   rules.md             ← Consent rules
   agents/active.md     ← Running agents (registry + kill switch)
-  tasks/               ← Regular task files (task-{id}.md, task-{id}.log.md)
-  human-tasks/         ← H2A task files (task-{id}.md, task-{id}.log.md)
+  human-tasks/         ← Task files (task-{id}.md, task-{id}.log.md)
   agent-tasks/         ← A2A coordination (a2a-{id}.md)
 ```
 

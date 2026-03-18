@@ -304,6 +304,64 @@ export function createOririTools(deps: OririToolsDeps): ToolDefinition[] {
       },
     },
     {
+      name: 'delete_task',
+      description:
+        'Delete a task. Two-phase human gate: first call sets status to needs_human. ' +
+        'After human approval (### Human Input in context), call again to delete.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          task_id: { type: 'string', description: 'The ID of the task to delete' },
+        },
+        required: ['task_id'],
+      },
+      async handler(input: unknown): Promise<ToolResult> {
+        try {
+          const { task_id } = input as { task_id: string };
+          const markdown = await taskService.readTask(task_id);
+
+          if (markdown.includes('### Human Input')) {
+            await logService.appendLog(task_id, agentId, 'task deleted after human approval');
+            await taskService.deleteTask(task_id);
+            return ok(`Task ${task_id} deleted.`);
+          }
+
+          await logService.appendLog(
+            task_id,
+            agentId,
+            'deletion requested — awaiting human approval',
+          );
+          await taskService.updateStatus(task_id, 'needs_human', agentId);
+          return ok(`Task ${task_id} flagged for human approval before deletion.`);
+        } catch (error: unknown) {
+          return err(error instanceof Error ? error.message : 'Failed to delete task');
+        }
+      },
+    },
+    {
+      name: 'request_human_gate',
+      description:
+        'Flag a task as requiring human review. Sets status to needs_human and logs the reason.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          task_id: { type: 'string', description: 'The ID of the task' },
+          reason: { type: 'string', description: 'Why human review is needed' },
+        },
+        required: ['task_id', 'reason'],
+      },
+      async handler(input: unknown): Promise<ToolResult> {
+        try {
+          const { task_id, reason } = input as { task_id: string; reason: string };
+          await logService.appendLog(task_id, agentId, `human gate requested: ${reason}`);
+          await taskService.updateStatus(task_id, 'needs_human', agentId);
+          return ok(`Task ${task_id} flagged for human review.`);
+        } catch (error: unknown) {
+          return err(error instanceof Error ? error.message : 'Failed to request human gate');
+        }
+      },
+    },
+    {
       name: 'check_consent',
       description:
         'Check the consent status of an A2A task. Returns the voting outcome (accepted/rejected/pending) with vote counts.',
