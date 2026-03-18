@@ -293,11 +293,11 @@ export function createOririTools(deps: OririToolsDeps): ToolDefinition[] {
             type?: TaskType;
             context?: string;
           };
-          await taskService.refineTask(task_id, agentId, {
+          const { targetStatus } = await taskService.refineTask(task_id, agentId, {
             type,
             contextBundle: context,
           });
-          return ok(`Task ${task_id} refined and promoted to open.`);
+          return ok(`Task ${task_id} refined and promoted to ${targetStatus}.`);
         } catch (error: unknown) {
           return err(error instanceof Error ? error.message : 'Failed to refine task');
         }

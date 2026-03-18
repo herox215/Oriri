@@ -18,8 +18,7 @@ import { agentStopCommand } from './agent-stop.js';
 import { mcpServeCommand } from './mcp-serve.js';
 import { watchCommand } from './watch.js';
 import { backupCommand } from './backup.js';
-import { createCommand } from './create.js';
-import { deleteCommand } from './delete.js';
+import { doCommand } from './do.js';
 import { tuiCommand } from './tui.js';
 
 const args = process.argv.slice(2);
@@ -48,8 +47,7 @@ function printHelp(): void {
   console.log('  agent-stop        Stop an agent or all agents');
   console.log('  mcp-serve         Start the MCP server (stdio transport)');
   console.log('  watch             Start the notification watcher');
-  console.log('  create <title>    Create a draft task from the CLI');
-  console.log('  delete <id>       Request deletion of a task (creates H2A task)');
+  console.log('  do "<request>"    Tell the agent what to do (natural language)');
   console.log('  tui               Interactive dashboard');
   console.log('  backup            Create a timestamped backup of .oriri/');
   console.log('  help              Show this help message');
@@ -109,26 +107,15 @@ async function main(): Promise<void> {
       watchCommand(basePath, { stop });
       break;
     }
-    case 'create': {
-      const title = args.slice(1).join(' ');
-      if (!title) {
-        console.error('Missing required argument: title');
-        console.error('Usage: oriri create "Task description"');
+    case 'do': {
+      const request = args.slice(1).join(' ');
+      if (!request) {
+        console.error('Missing required argument: request');
+        console.error('Usage: oriri do "Tell the agent what to do"');
         process.exitCode = 1;
         break;
       }
-      await createCommand(title);
-      break;
-    }
-    case 'delete': {
-      const targetId = args[1];
-      if (!targetId) {
-        console.error('Missing required argument: task ID');
-        console.error('Usage: oriri delete <id>');
-        process.exitCode = 1;
-        break;
-      }
-      await deleteCommand(targetId);
+      await doCommand(request);
       break;
     }
     case 'tui': {

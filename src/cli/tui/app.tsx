@@ -13,6 +13,7 @@ import { TaskPanel } from './components/task-panel.js';
 import { StatusBar } from './components/status-bar.js';
 import { AgentStartModal } from './components/agent-start-modal.js';
 import { HumanInputModal } from './components/human-input-modal.js';
+import { CreateTaskModal } from './components/create-task-modal.js';
 import { spawnAgent, stopAgent } from './tui-process.js';
 
 interface AppProps {
@@ -39,6 +40,7 @@ export function App({ registry, taskService, logService, config, projectRoot }: 
   const [selectedProvider, setSelectedProvider] = useState<ProviderConfig | null>(null);
   const [humanModalTask, setHumanModalTask] = useState<{ id: string; title: string } | null>(null);
   const [humanModalLog, setHumanModalLog] = useState('');
+  const [createTaskOpen, setCreateTaskOpen] = useState(false);
 
   const handleStopAgent = useCallback(async () => {
     if (agentCursor >= agents.length) return;
@@ -83,7 +85,27 @@ export function App({ registry, taskService, logService, config, projectRoot }: 
     [humanModalTask, taskService],
   );
 
+  const handleCreateTask = useCallback(
+    async (text: string) => {
+      const contextBundle = `### User Request\n\n${text}`;
+      await taskService.createTask({
+        title: text,
+        type: 'chore',
+        createdBy: 'cli',
+        status: 'open',
+        contextBundle,
+      });
+      setCreateTaskOpen(false);
+    },
+    [taskService],
+  );
+
   useInput((input, key) => {
+    if (createTaskOpen) {
+      // CreateTaskModal handles its own input via TextInput + useInput
+      return;
+    }
+
     if (humanModalTask) {
       // HumanInputModal handles its own input via TextInput + useInput
       return;
@@ -157,6 +179,11 @@ export function App({ registry, taskService, logService, config, projectRoot }: 
       return;
     }
 
+    if (input === 'n') {
+      setCreateTaskOpen(true);
+      return;
+    }
+
     if (input === 'a') {
       setModalOpen(true);
       setModalCursor(0);
@@ -180,6 +207,12 @@ export function App({ registry, taskService, logService, config, projectRoot }: 
           step={modalStep}
         />
       )}
+      {createTaskOpen && (
+        <CreateTaskModal
+          onSubmit={(text) => void handleCreateTask(text)}
+          onCancel={() => setCreateTaskOpen(false)}
+        />
+      )}
       {humanModalTask && (
         <HumanInputModal
           taskId={humanModalTask.id}
@@ -192,7 +225,7 @@ export function App({ registry, taskService, logService, config, projectRoot }: 
           }}
         />
       )}
-      <StatusBar activePanel={activePanel} modalOpen={modalOpen || humanModalTask !== null} modalStep={modalOpen ? modalStep : undefined} />
+      <StatusBar activePanel={activePanel} modalOpen={modalOpen || humanModalTask !== null || createTaskOpen} modalStep={modalOpen ? modalStep : undefined} isTextInput={humanModalTask !== null || createTaskOpen} />
     </Box>
   );
 }
