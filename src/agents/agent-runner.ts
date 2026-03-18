@@ -154,7 +154,7 @@ export class AgentRunner {
     if (agentConfig.role === 'SAGENT') {
       const sagentToolNames = new Set([
         'list_tasks', 'claim_task', 'append_log', 'complete_task', 'get_story',
-        'create_a2a', 'delete_task', 'request_human_gate',
+        'create_a2a', 'create_task', 'delete_task', 'request_human_gate',
       ]);
       const allDefs = this.deps.toolRegistry.listDefinitions();
       sagentToolOverrides = allDefs.filter((d) => sagentToolNames.has(d.name));
