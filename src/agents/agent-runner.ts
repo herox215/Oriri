@@ -149,6 +149,17 @@ export class AgentRunner {
     const taskMarkdown = await this.deps.taskService.readTask(taskId);
     const systemPrompt = this.buildSystemPrompt(agentConfig, storyContent, taskMarkdown);
 
+    // SAGENT gets a scoped tool set — no A2A processing tools
+    let sagentToolOverrides: LLMToolDefinition[] | undefined;
+    if (agentConfig.role === 'SAGENT') {
+      const sagentToolNames = new Set([
+        'list_tasks', 'claim_task', 'append_log', 'complete_task', 'get_story',
+        'create_a2a', 'delete_task', 'request_human_gate',
+      ]);
+      const allDefs = this.deps.toolRegistry.listDefinitions();
+      sagentToolOverrides = allDefs.filter((d) => sagentToolNames.has(d.name));
+    }
+
     const messages: LLMMessage[] = [
       {
         role: 'user',
@@ -160,7 +171,7 @@ export class AgentRunner {
 
     let finished = false;
     while (!finished && !shutdownController.isShutdownRequested()) {
-      const response = await this.callLLMWithRetry(systemPrompt, messages, taskId);
+      const response = await this.callLLMWithRetry(systemPrompt, messages, taskId, sagentToolOverrides);
 
       if (!response) {
         // All retries failed — escalate
@@ -413,8 +424,15 @@ export class AgentRunner {
   }
 
   async findOpenA2A(): Promise<string | null> {
-    const { a2aService } = this.deps;
+    const { a2aService, roleService, agentConfig } = this.deps;
     if (!a2aService) return null;
+
+    try {
+      roleService.checkCanClaimA2A(agentConfig.role);
+    } catch (error: unknown) {
+      if (error instanceof PermissionDeniedError) return null;
+      throw error;
+    }
 
     const ids = await a2aService.listA2A();
     for (const id of ids) {

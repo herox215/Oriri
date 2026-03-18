@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AgentRunner, type AgentRunnerDeps } from './agent-runner.js';
 import type { ShutdownController } from './agent-lifecycle.js';
 import type { LLMResponse } from '../llm/llm-provider.js';
+import { PermissionDeniedError } from '../shared/errors.js';
 
 function createMockDeps(overrides?: Partial<AgentRunnerDeps>): AgentRunnerDeps {
   const shutdownRequested = false;
@@ -41,6 +42,7 @@ function createMockDeps(overrides?: Partial<AgentRunnerDeps>): AgentRunnerDeps {
     } as unknown as AgentRunnerDeps['logService'],
     roleService: {
       checkCanClaimTask: vi.fn(),
+      checkCanClaimA2A: vi.fn(),
     } as unknown as AgentRunnerDeps['roleService'],
     registry: {
       isRegistered: vi.fn().mockResolvedValue(true),
@@ -236,6 +238,28 @@ describe('AgentRunner', () => {
       const result = await runner.findOpenA2A();
 
       expect(result).toBe('a2a-002');
+    });
+
+    it('should return null for SAGENT even with open A2As', async () => {
+      deps.agentConfig = { ...deps.agentConfig, role: 'SAGENT' };
+      (deps.roleService.checkCanClaimA2A as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        throw new PermissionDeniedError('claim A2A task', 'SAGENT', 'only AGENT can claim A2A tasks');
+      });
+      deps.a2aService = {
+        listA2A: vi.fn().mockResolvedValue(['a2a-001']),
+        readA2A: vi.fn().mockResolvedValue(
+          '# A2A\n\n| Field | Value |\n|-------|-------|\n| status | open |\n',
+        ),
+        resolveA2A: vi.fn(),
+        createA2A: vi.fn(),
+      } as unknown as AgentRunnerDeps['a2aService'];
+
+      const runner = new AgentRunner(deps);
+      const result = await runner.findOpenA2A();
+
+      expect(result).toBeNull();
+      // listA2A should not even be called since the role check blocks early
+      expect((deps.a2aService as NonNullable<typeof deps.a2aService>).listA2A).not.toHaveBeenCalled();
     });
   });
 
@@ -535,6 +559,49 @@ describe('AgentRunner', () => {
         'needs_human',
         'agent-alpha',
       );
+    });
+
+    it('should use scoped tool set for SAGENT', async () => {
+      deps.agentConfig = { ...deps.agentConfig, role: 'SAGENT' };
+      const allDefs = [
+        { name: 'list_tasks', description: '', input_schema: {} },
+        { name: 'claim_task', description: '', input_schema: {} },
+        { name: 'append_log', description: '', input_schema: {} },
+        { name: 'complete_task', description: '', input_schema: {} },
+        { name: 'get_story', description: '', input_schema: {} },
+        { name: 'create_a2a', description: '', input_schema: {} },
+        { name: 'delete_task', description: '', input_schema: {} },
+        { name: 'request_human_gate', description: '', input_schema: {} },
+        { name: 'vote', description: '', input_schema: {} },
+        { name: 'resolve_a2a', description: '', input_schema: {} },
+        { name: 'list_a2a', description: '', input_schema: {} },
+        { name: 'check_consent', description: '', input_schema: {} },
+        { name: 'refine_task', description: '', input_schema: {} },
+      ];
+      (deps.toolRegistry.listDefinitions as ReturnType<typeof vi.fn>).mockReturnValue(allDefs);
+      (deps.llmProvider.createMessage as ReturnType<typeof vi.fn>).mockResolvedValue(
+        makeEndTurnResponse('Done!'),
+      );
+
+      const runner = new AgentRunner(deps);
+      await runner.workOnTask('task-001');
+
+      const callArgs = (deps.llmProvider.createMessage as ReturnType<typeof vi.fn>).mock
+        .calls[0] as [{ tools: { name: string }[] }];
+      const toolNames = callArgs[0].tools.map((t: { name: string }) => t.name);
+      expect(toolNames).toContain('list_tasks');
+      expect(toolNames).toContain('claim_task');
+      expect(toolNames).toContain('append_log');
+      expect(toolNames).toContain('complete_task');
+      expect(toolNames).toContain('get_story');
+      expect(toolNames).toContain('create_a2a');
+      expect(toolNames).toContain('delete_task');
+      expect(toolNames).toContain('request_human_gate');
+      expect(toolNames).not.toContain('vote');
+      expect(toolNames).not.toContain('resolve_a2a');
+      expect(toolNames).not.toContain('list_a2a');
+      expect(toolNames).not.toContain('check_consent');
+      expect(toolNames).not.toContain('refine_task');
     });
 
     it('should handle claim failure gracefully', async () => {

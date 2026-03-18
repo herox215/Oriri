@@ -64,6 +64,7 @@ export async function agentStartCommand(options: AgentStartOptions): Promise<voi
       storage,
       consentService,
       a2aService,
+      roleService,
       agentId: agentConfig.id,
       role: agentConfig.role,
     }),

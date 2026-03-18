@@ -123,6 +123,16 @@ export class StaleTaskDetectionError extends OririError {
   }
 }
 
+export class A2ALimitExceededError extends OririError {
+  constructor(targetTaskId: string, limit: number) {
+    super(
+      `A2A limit exceeded for target task ${targetTaskId}: max ${String(limit)} open A2A tasks per target`,
+      'A2A_LIMIT_EXCEEDED',
+    );
+    this.name = 'A2ALimitExceededError';
+  }
+}
+
 export class A2ANotFoundError extends OririError {
   constructor(id: string) {
     super(`A2A task ${id} not found`, 'A2A_NOT_FOUND');

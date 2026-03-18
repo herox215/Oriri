@@ -57,7 +57,7 @@ export async function mcpServeCommand(
     createAppendLogTool(taskService),
     createVoteTool(consentService, registry),
     createUpdateTaskTool(taskService),
-    createCreateA2ATool(a2aService),
+    createCreateA2ATool(a2aService, registry, roleService),
     createCheckDeadlocksTool(deadlockDetector),
     createRecoverTaskTool(fileRecoveryService),
     createSetDependenciesTool(taskService),

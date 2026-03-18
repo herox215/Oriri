@@ -54,7 +54,7 @@ const ROLE_PERMISSIONS: Record<AgentRole, RolePermissions> = {
       canRead: true,
       canCreate: true,
     },
-    a2a: { canCreate: true, canClaim: true, canRead: true },
+    a2a: { canCreate: true, canClaim: false, canRead: true },
     story: { canRead: true, canWrite: true },
     canVote: true,
   },

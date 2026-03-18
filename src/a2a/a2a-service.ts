@@ -1,10 +1,10 @@
 import type { StorageInterface } from '../storage/storage-interface.js';
-import { StorageReadError } from '../shared/errors.js';
-import { A2ANotFoundError } from '../shared/errors.js';
+import { StorageReadError, A2ANotFoundError, A2ALimitExceededError } from '../shared/errors.js';
 import type { A2AType } from './a2a-types.js';
 import { generateA2AId } from './a2a-id.js';
 import {
   buildA2AMarkdown,
+  extractA2AStatusFromMarkdown,
   extractA2ATargetTaskFromMarkdown,
   replaceA2AStatusInMarkdown,
   type VoterEntry,
@@ -25,10 +25,37 @@ function formatLogLine(agentId: string, message: string): string {
   return `[${timestamp}] ${agentId} | ${message}`;
 }
 
+const MAX_OPEN_A2A_PER_TARGET = 3;
+
 export class A2AService {
   constructor(private readonly storage: StorageInterface) {}
 
+  async countOpenA2AForTarget(targetTaskId: string): Promise<number> {
+    const ids = await this.storage.listA2A();
+    let count = 0;
+    for (const id of ids) {
+      try {
+        const markdown = await this.storage.readA2A(id);
+        const status = extractA2AStatusFromMarkdown(markdown);
+        const target = extractA2ATargetTaskFromMarkdown(markdown);
+        if (status === 'open' && target === targetTaskId) {
+          count++;
+        }
+      } catch {
+        continue;
+      }
+    }
+    return count;
+  }
+
   async createA2A(input: CreateA2AInput): Promise<string> {
+    if (input.targetTaskId) {
+      const openCount = await this.countOpenA2AForTarget(input.targetTaskId);
+      if (openCount >= MAX_OPEN_A2A_PER_TARGET) {
+        throw new A2ALimitExceededError(input.targetTaskId, MAX_OPEN_A2A_PER_TARGET);
+      }
+    }
+
     const existingIds = await this.storage.listA2A();
     const id = generateA2AId(input.createdBy, input.type, existingIds);
     const createdAt = new Date().toISOString();

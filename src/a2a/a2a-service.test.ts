@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { initCommand } from '../cli/init.js';
 import { FilesystemStorage } from '../storage/filesystem-storage.js';
-import { A2ANotFoundError } from '../shared/errors.js';
+import { A2ANotFoundError, A2ALimitExceededError } from '../shared/errors.js';
 import { A2AService } from './a2a-service.js';
 
 describe('A2AService', () => {
@@ -93,6 +93,66 @@ describe('A2AService', () => {
       const log = await service.readA2ALog(id);
       expect(log).toContain('agent-alpha');
       expect(log).toContain('created A2A task: story_archive');
+    });
+  });
+
+  describe('A2A limit per target task', () => {
+    it('should throw A2ALimitExceededError when 3 open A2As exist for same target', async () => {
+      const targetTaskId = 'task-target';
+      for (let i = 0; i < 3; i++) {
+        await service.createA2A({
+          type: 'split_proposal',
+          createdBy: 'agent-alpha',
+          description: `Proposal ${String(i + 1)}`,
+          targetTaskId,
+        });
+      }
+
+      await expect(
+        service.createA2A({
+          type: 'dependency_discovery',
+          createdBy: 'agent-alpha',
+          description: 'Proposal 4',
+          targetTaskId,
+        }),
+      ).rejects.toThrow(A2ALimitExceededError);
+    });
+
+    it('should allow 4th A2A after resolving one', async () => {
+      const targetTaskId = 'task-target2';
+      const ids: string[] = [];
+      for (let i = 0; i < 3; i++) {
+        const id = await service.createA2A({
+          type: 'split_proposal',
+          createdBy: 'agent-alpha',
+          description: `Proposal ${String(i + 1)}`,
+          targetTaskId,
+        });
+        ids.push(id);
+      }
+
+      // Resolve one
+      await service.resolveA2A(ids[0], 'agent-alpha');
+
+      // Now the 4th should succeed
+      const id4 = await service.createA2A({
+        type: 'dependency_discovery',
+        createdBy: 'agent-alpha',
+        description: 'Proposal 4',
+        targetTaskId,
+      });
+      expect(id4).toMatch(/^[0-9a-f]{8}$/);
+    });
+
+    it('should allow unlimited A2As without target task', async () => {
+      for (let i = 0; i < 5; i++) {
+        const id = await service.createA2A({
+          type: 'story_archive',
+          createdBy: 'agent-alpha',
+          description: `Archive ${String(i + 1)}`,
+        });
+        expect(id).toMatch(/^[0-9a-f]{8}$/);
+      }
     });
   });
 

@@ -38,6 +38,14 @@ function createMockDeps(): OririToolsDeps {
       listA2A: vi.fn().mockResolvedValue([]),
       resolveA2A: vi.fn().mockResolvedValue(undefined),
     } as unknown as OririToolsDeps['a2aService'],
+    roleService: {
+      checkCanCreateA2A: vi.fn(),
+      checkCanClaimA2A: vi.fn(),
+      checkCanClaimTask: vi.fn(),
+      checkCanVote: vi.fn(),
+      checkCanWriteStory: vi.fn(),
+      checkCanCreateTask: vi.fn(),
+    } as unknown as OririToolsDeps['roleService'],
     agentId: 'agent-alpha',
     role: 'AGENT',
   };

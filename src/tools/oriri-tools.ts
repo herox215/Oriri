@@ -11,6 +11,7 @@ import { extractA2AStatusFromMarkdown } from '../a2a/a2a-markdown.js';
 import type { ToolDefinition, ToolResult } from './tool-types.js';
 import type { ConsentService, VoteValue } from '../a2a/consent-service.js';
 import type { A2AService } from '../a2a/a2a-service.js';
+import type { RoleService } from '../agents/role-service.js';
 import { A2A_TYPES, type A2AType } from '../a2a/a2a-types.js';
 import { TASK_TYPES, type TaskType } from '../tasks/task-types.js';
 
@@ -20,6 +21,7 @@ export interface OririToolsDeps {
   storage: StorageInterface;
   consentService: ConsentService;
   a2aService: A2AService;
+  roleService: RoleService;
   agentId: string;
   role: AgentRole;
 }
@@ -33,7 +35,7 @@ function err(content: string): ToolResult {
 }
 
 export function createOririTools(deps: OririToolsDeps): ToolDefinition[] {
-  const { taskService, logService, storage, consentService, a2aService, agentId, role } = deps;
+  const { taskService, logService, storage, consentService, a2aService, roleService, agentId, role } = deps;
 
   return [
     {
@@ -168,6 +170,7 @@ export function createOririTools(deps: OririToolsDeps): ToolDefinition[] {
       },
       async handler(input: unknown): Promise<ToolResult> {
         try {
+          roleService.checkCanCreateA2A(role);
           const { type: a2aType, description: desc, target_task_id } = input as {
             type: string;
             description: string;

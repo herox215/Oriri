@@ -89,6 +89,26 @@ describe('RoleService', () => {
         service.checkCanClaimA2A('MCP_CLIENT');
       }).toThrow(PermissionDeniedError);
     });
+
+    it('should deny SAGENT from claiming A2A tasks', () => {
+      expect(() => {
+        service.checkCanClaimA2A('SAGENT');
+      }).toThrow(PermissionDeniedError);
+    });
+  });
+
+  describe('SAGENT A2A permissions', () => {
+    it('should allow SAGENT to create A2A tasks', () => {
+      expect(() => {
+        service.checkCanCreateA2A('SAGENT');
+      }).not.toThrow();
+    });
+
+    it('should allow SAGENT to vote', () => {
+      expect(() => {
+        service.checkCanVote('SAGENT');
+      }).not.toThrow();
+    });
   });
 
   describe('checkCanVote', () => {
